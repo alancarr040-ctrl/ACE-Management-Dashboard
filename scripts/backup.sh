@@ -50,8 +50,11 @@ begin_step "Backing up infrastructure/config files"
 tar -czf "$BACKUP_DIR/ace_infrastructure.tar.gz" \
   .env \
   docker-compose.yml \
-  PROJECT.md \
   README.md \
+  ROADMAP.md \
+  CHANGELOG.md \
+  docs/Vision/PROJECT.md \
+  docs/Vision/VISION.md \
   VERSION \
   scripts \
   docs \

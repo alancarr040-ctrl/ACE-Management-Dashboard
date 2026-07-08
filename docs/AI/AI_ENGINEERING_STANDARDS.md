@@ -32,11 +32,11 @@ The term **ACE** refers exclusively to the underlying ACE emulator/server projec
 ## Documentation standards
 
 - `README.md` explains the project entry point.
-- `VISION.md` defines product identity and philosophy.
+- `docs/Vision/VISION.md` defines product identity and philosophy.
 - `ROADMAP.md` is the public GitHub roadmap.
 - `CHANGELOG.md` summarizes certified releases.
 - `docs/AI/AI_ROADMAP.md` provides governance roadmap detail.
-- Future package work must update documentation when architecture, roadmap, naming, or workflow expectations change.
+- Future package work must update documentation when architecture, roadmap, naming, workflow expectations, or documentation layout changes.
 
 ## Git and certification standards
 
@@ -45,3 +45,13 @@ The term **ACE** refers exclusively to the underlying ACE emulator/server projec
 - Review changes in GitHub Desktop or git diff before commit.
 - Commit only accepted packages to the main branch.
 - Preserve package ZIPs as recovery points.
+
+## Repository documentation layout standard
+
+- Keep the repository root limited to repository-level identity files and deployment entry points.
+- Store long-form documentation under `docs/`.
+- Store package-specific release notes and package READMEs under `docs/Releases/<version>/`.
+- Store product vision and infrastructure project overview under `docs/Vision/`.
+- Store architecture decisions under `docs/Architecture/Decisions/`.
+- Store operational notes under `docs/Operations/`.
+- Store development workflow and standards under `docs/Development/`.

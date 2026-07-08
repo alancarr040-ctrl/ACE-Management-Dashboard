@@ -1,19 +1,20 @@
 # ACE Management Dashboard Project Metadata
 
 name: ACE Management Dashboard
-version: 2.6.0-dev
-phase: 2 - ACE Server Management
-milestone: 2.6.0 - Operational Monitoring & Events
+version: 2.7.1-dev
+phase: 2 - ACEMD Platform Foundation
+milestone: 2.7.1 - Repository & Documentation Reorganization
 status: Development
-build: 2026.07.08-250
+build: 2026.07.08-271
 
 ## Current Milestone
 
-2.6.0 adds an Operational Events layer that records health transitions and management command results in a compact JSONL event journal. The Health page remains read-only while now surfacing recent events, and the new Events workspace provides a filtered event timeline.
+2.7.1 reorganizes repository documentation so release notes, package READMEs, project vision, operational notes, development standards, and decision records live under logical `docs/` subdirectories.
 
 ## Notes
 
-- Adds `/health` and `/api/health` as read-only operational health views.
-- Reuses existing Docker, backup, system, and management service layers.
-- Keeps corrective actions on the Management page or SSH/manual workflows.
-- Maintains the compact UI principle: new visibility is aggregated into subsystem summaries instead of expanding top-level card count.
+- No dashboard runtime behavior changes are intended.
+- Keeps the repository root focused on identity files and deployment entry points.
+- Preserves package-specific documentation under `docs/Releases/`.
+- Preserves governance documentation under `docs/AI/`.
+- Establishes the documentation layout used by future ACEMD packages.

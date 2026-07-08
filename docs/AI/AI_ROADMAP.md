@@ -10,7 +10,7 @@ Use **ACE** only for the underlying emulator/server project. Do not use ACE as s
 
 This document is the governance-oriented roadmap for future AI-assisted development. The public GitHub-facing roadmap is `ROADMAP.md`.
 
-Future packages must update this document when architecture, phase order, subsystem scope, or governance expectations change.
+Future packages must update this document when architecture, phase order, subsystem scope, documentation layout, or governance expectations change.
 
 ## Current status
 
@@ -20,8 +20,9 @@ Future packages must update this document when architecture, phase order, subsys
 | 2.4.x | Interactive Management | Complete |
 | 2.5.x | Operational Health | Complete |
 | 2.6.0 | Operational Monitoring & Events | Complete |
-| 2.6.1 | Roadmap & Vision | Current |
-| 2.7.0 | Scheduler & Automation | Planned |
+| 2.6.1 | Roadmap & Vision | Complete |
+| 2.7.0 | Scheduler & Automation | Complete |
+| 2.7.1 | Repository & Documentation Reorganization | Current |
 | 2.8.0 | Metrics & Resource Monitoring | Planned |
 | 2.9.0 | Notifications & Alerts | Planned |
 | 3.0.0 | ACE Data Integration Foundation | Planned |

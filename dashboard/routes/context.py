@@ -9,6 +9,7 @@ from services.system_service import SystemService
 from services.management_service import ManagementService
 from services.health_service import HealthService
 from services.event_service import EventService
+from services.automation_service import AutomationService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -17,6 +18,7 @@ system_service = SystemService()
 management_service = ManagementService()
 health_service = HealthService(docker_service, backup_service, system_service, management_service)
 event_service = EventService()
+automation_service = AutomationService(health_service, backup_service, system_service, management_service, event_service)
 ace_status_service = ACEStatusService(docker_service)
 ace_log_service = ACELogService(docker_service)
 

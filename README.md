@@ -2,16 +2,16 @@
 
 **ACE Management Dashboard** (**ACEMD**) is a web-based management and administration platform for an ACE server stack.
 
-ACEMD is **not** the ACE emulator and is **not** a fork of ACE. ACE refers to the underlying emulator/server project. ACEMD is the companion dashboard, wrapper, monitoring, automation, and administration platform built around an ACE server deployment.
+ACEMD is **not** the ACE emulator and is **not** a fork of ACE. ACE refers to the upstream emulator/server project. ACEMD is the companion dashboard, wrapper, monitoring, automation, and administration platform built around an ACE server deployment.
 
 ## Current package
 
 | Field | Value |
 |---|---|
-| Version | 2.6.1-dev |
+| Version | 2.7.1-dev |
 | Phase | 2 - ACEMD Platform Foundation |
-| Milestone | 2.6.1 - Roadmap & Vision |
-| Build | 2026.07.08-261 |
+| Milestone | 2.7.1 - Repository & Documentation Reorganization |
+| Build | 2026.07.08-271 |
 
 ## Project direction
 
@@ -23,15 +23,17 @@ The project intentionally began with the operational platform first:
 - Interactive operations console.
 - Health dashboard.
 - Event journal.
-- Upcoming scheduler, metrics, and notifications.
+- Automation engine.
+- Future metrics and notifications.
 
 These platform services provide the safety, visibility, and auditability needed before building account and character administration modules.
 
 See:
 
-- [`VISION.md`](VISION.md)
+- [`docs/Vision/VISION.md`](docs/Vision/VISION.md)
 - [`ROADMAP.md`](ROADMAP.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
+- [`docs/README.md`](docs/README.md)
 
 ## Current capabilities
 
@@ -39,11 +41,11 @@ See:
 - Docker workspace for container inventory, health, logs, and guarded ACE server restart.
 - Backup workspace for runtime backup creation, discovery, validation, manifests, and reporting.
 - Logs workspace for ACE server, database, and dashboard container logs with filtering.
-- About workspace for project metadata.
-- ACE Management Utility wrapper for common stack administration.
-- Compact Management operations console for whitelisted wrapper actions with output capture, dry-run support, filtering, and collapsible subsystem groups.
+- Management operations console for whitelisted wrapper actions with output capture, dry-run support, filtering, and collapsible subsystem groups.
 - Health workspace for read-only operational status.
 - Events workspace for operational monitoring history.
+- Automation workspace for request-driven scheduler ticks, built-in read-only jobs, Run Now support, and job history.
+- About workspace for project metadata.
 
 ## Deployment
 
@@ -85,13 +87,20 @@ Dry-run mode prints the Docker or script command that would run without making c
 
 ## Documentation
 
+The repository root is intentionally kept small. Long-form documentation lives under `docs/`.
+
 Important project documents:
 
-- `VISION.md` - product identity and philosophy.
+- `docs/README.md` - documentation index.
+- `docs/Vision/VISION.md` - product identity and philosophy.
+- `docs/Vision/PROJECT.md` - infrastructure and repository overview.
 - `ROADMAP.md` - public project roadmap.
 - `CHANGELOG.md` - cumulative release history.
-- `PROJECT.md` - infrastructure and repository overview.
 - `docs/AI/AI_ROADMAP.md` - detailed governance roadmap.
+- `docs/Architecture/` - architecture and engineering decision records.
+- `docs/Automation/` - scheduler and automation documentation.
+- `docs/Operations/` - Docker, backups, database, network, recovery, and server operations.
+- `docs/Releases/` - per-release package README and release notes.
 - `docs/Packages/` - future package definitions.
 
 ## Development cleanup
@@ -103,3 +112,5 @@ scripts/clean-dev.sh
 ```
 
 This removes `__pycache__`, compiled Python files, and common local cache folders.
+
+The ignored `Test/` directory is reserved for package extraction and deployment testing before accepted changes are copied into the repository for Git review.

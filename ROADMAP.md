@@ -40,8 +40,9 @@ The current 2.x phases establish the platform layer. Beginning with the 3.x seri
 | 2.4.x | Interactive Management | Complete | Web operations console backed by the wrapper. |
 | 2.5.x | Operational Health | Complete | Read-only health dashboard and service checks. |
 | 2.6.0 | Operational Monitoring & Events | Complete | Event journal and health transition tracking. |
-| 2.6.1 | Roadmap & Vision | Current | Public roadmap, product identity, and project direction. |
-| 2.7.0 | Scheduler & Automation | Planned | Background job framework and automation foundation. |
+| 2.6.1 | Roadmap & Vision | Complete | Public roadmap, product identity, and project direction. |
+| 2.7.0 | Scheduler & Automation | Complete | Background job framework and automation foundation. |
+| 2.7.1 | Repository & Documentation Reorganization | Current | Clean documentation layout and root directory policy. |
 | 2.8.0 | Metrics & Resource Monitoring | Planned | CPU, memory, disk, network, and container resource views. |
 | 2.9.0 | Notifications & Alerts | Planned | Configurable notifications for health, jobs, and warnings. |
 | 3.0.0 | ACE Data Integration Foundation | Planned | Safe read-only access patterns for ACE account, character, and world data. |
@@ -72,7 +73,11 @@ Track meaningful operational changes over time. Health, management, automation, 
 
 ### 2.7.0 - Scheduler & Automation
 
-Introduce a background job framework for scheduled health polling, backup checks, update checks, cleanup, and future maintenance tasks.
+Introduce the ACEMD Automation Engine, Automation dashboard, request-driven scheduler, built-in read-only jobs, manual job runs, job history, and event publishing.
+
+### 2.7.1 - Repository & Documentation Reorganization
+
+Reorganize repository documentation so package notes, release notes, vision, operational docs, development standards, and engineering decision records live under logical `docs/` directories while the repository root remains clean.
 
 ### 2.8.0 - Metrics & Resource Monitoring
 

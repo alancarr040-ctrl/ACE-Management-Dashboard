@@ -51,3 +51,15 @@
 - Established ACE Management Dashboard / ACEMD terminology.
 - Clarified the distinction between ACEMD and the ACE emulator/server.
 - Documented the path from platform foundation to account, character, player, world, and database administration.
+
+## 2.7.0 - Scheduler & Automation
+
+- Added ACEMD Automation Engine foundation.
+- Added Automation dashboard tab and `/automation` route.
+- Added `/api/automation` endpoint.
+- Added request-driven scheduler tick.
+- Added built-in read-only jobs for Health, backups, disk usage, wrapper validation, and event journal validation.
+- Added manual **Run Now** support for safe jobs.
+- Added automation job history and automation event publishing.
+- Added `docs/Automation/` documentation.
+- Updated `.gitignore` to ignore `Test/`.

@@ -6,7 +6,7 @@
 
 ACEMD is not ACE and is not an ACE emulator fork. ACE refers to the underlying emulator/server project. ACEMD refers to this repository's dashboard, wrapper, monitoring, automation, documentation, and future ACE administration modules.
 
-See `VISION.md` and `ROADMAP.md` for the product vision and public roadmap.
+See `docs/Vision/VISION.md` and `ROADMAP.md` for the product vision and public roadmap.
 
 ---
 
@@ -70,6 +70,14 @@ This project has several primary goals:
 ├── backups/
 │
 ├── docs/
+│   ├── AI/
+│   ├── Architecture/
+│   ├── Automation/
+│   ├── Development/
+│   ├── Operations/
+│   ├── Packages/
+│   ├── Releases/
+│   └── Vision/
 │
 ├── official/
 │
@@ -77,7 +85,10 @@ This project has several primary goals:
 │
 ├── docker-compose.yml
 ├── .env
-└── PROJECT.md
+├── README.md
+├── ROADMAP.md
+├── CHANGELOG.md
+└── VERSION
 ```
 
 ---

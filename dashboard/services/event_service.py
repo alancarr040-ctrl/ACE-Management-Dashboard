@@ -83,6 +83,23 @@ class EventService:
         )
         self._append_events([event])
 
+
+    def record_event(self, *, source: str, event_type: str, severity: str, title: str, message: str, entity: str, previous: str | None = None, current: str | None = None, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Record a single operational event through the shared event journal."""
+        event = self._event(
+            source=source,
+            event_type=event_type,
+            severity=severity,
+            title=title,
+            message=message,
+            entity=entity,
+            previous=previous,
+            current=current,
+            metadata=metadata,
+        )
+        self._append_events([event])
+        return event
+
     def get_recent_events(self, limit: int = 25, severity: str | None = None, source: str | None = None) -> list[dict[str, Any]]:
         rows = self._read_events()
         if severity:

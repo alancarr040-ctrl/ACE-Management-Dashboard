@@ -1,6 +1,32 @@
 # ACE Management Dashboard Changelog
 
-This changelog summarizes certified project milestones. Detailed release notes remain available in the per-package release documentation.
+This changelog summarizes certified project milestones. Detailed release notes remain available in the per-package release documentation under `docs/Releases/`.
+
+## 2.7.1 - Repository & Documentation Reorganization
+
+Documentation-structure release.
+
+- Reorganized release-specific README and release notes into `docs/Releases/`.
+- Moved product vision and project overview documentation into `docs/Vision/`.
+- Moved engineering decision records into `docs/Architecture/Decisions/`.
+- Moved operational documentation into `docs/Operations/`.
+- Moved development workflow documentation into `docs/Development/`.
+- Added documentation index files for the reorganized `docs/` tree.
+- Removed accidental `docs/test.txt` artifact.
+- Updated project metadata to 2.7.1.
+
+## 2.7.0 - Scheduler & Automation
+
+- Added ACEMD Automation Engine foundation.
+- Added Automation dashboard tab and `/automation` route.
+- Added `/api/automation` endpoint.
+- Added request-driven scheduler tick.
+- Added built-in read-only jobs for Health, backups, disk usage, wrapper validation, and event journal validation.
+- Added manual **Run Now** support for safe jobs.
+- Added automation job history.
+- Added automation event publishing.
+- Added `docs/Automation/` documentation.
+- Updated `.gitignore` to ignore `Test/`.
 
 ## 2.6.1 - Roadmap & Vision
 

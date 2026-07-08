@@ -2,7 +2,7 @@
 
 ## Package status
 
-Planned.
+Implemented for testing.
 
 ## Product name
 
@@ -16,15 +16,15 @@ The goal is not to automate every maintenance task immediately. The goal is to e
 
 ## Scope
 
-Phase 2.7.0 should introduce:
+Phase 2.7.0 introduces:
 
 - Automation/Scheduler workspace.
-- Job registry.
+- Built-in read-only job definitions.
 - Job status API.
 - Job history storage.
 - Manual run support for safe jobs.
-- Enable/disable status for jobs where appropriate.
-- Event publication for job starts, completions, failures, and skipped runs.
+- Enabled/disabled display for built-in jobs.
+- Event publication for job completions and failures.
 - Initial read-only or low-risk jobs such as health polling, backup freshness check, disk threshold check, and wrapper availability check.
 
 ## Out of scope
