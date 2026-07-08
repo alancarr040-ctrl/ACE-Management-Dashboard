@@ -1,0 +1,26 @@
+from flask import Flask
+
+from routes.about_routes import about_bp
+from routes.backup_routes import backup_bp
+from routes.dashboard_routes import dashboard_bp
+from routes.docker_routes import docker_bp
+from routes.log_routes import logs_bp
+from routes.management_routes import management_bp
+
+
+def create_app() -> Flask:
+    app = Flask(__name__)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(docker_bp)
+    app.register_blueprint(backup_bp)
+    app.register_blueprint(logs_bp)
+    app.register_blueprint(management_bp)
+    app.register_blueprint(about_bp)
+    return app
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)

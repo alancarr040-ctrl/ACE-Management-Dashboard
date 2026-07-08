@@ -1,0 +1,9 @@
+{% set badge_class = "gray" %}
+{% if status in ["Healthy", "Verified", "Running", "Success"] %}
+    {% set badge_class = "green" %}
+{% elif status in ["Partial", "Warning", "Starting"] %}
+    {% set badge_class = "yellow" %}
+{% elif status in ["Failed", "Invalid", "Unhealthy", "Error"] %}
+    {% set badge_class = "red" %}
+{% endif %}
+<span class="badge {{ badge_class }}">{{ status }}</span>

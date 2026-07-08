@@ -1,0 +1,9 @@
+services:
+  ace-dashboard:
+    volumes:
+      - ./dashboard:/app
+      - ./backups:/opt/acserver/backups:rw
+      - ./scripts:/opt/acserver/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - FLASK_ENV=development

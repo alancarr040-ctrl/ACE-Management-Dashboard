@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACE Management Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+<header class="header">
+    <h1>ACE Management Dashboard</h1>
+    {% include "components/project_info.html" %}
+</header>
+
+{% include "components/navigation.html" %}
+
+{% if active_tab == 'dashboard' %}
+<section id="dashboard">
+    <div class="grid-3">
+        <div class="card">
+            <h3>System Disk</h3>
+            <div class="property-row compact"><div class="property-label">Total</div><div class="property-value">{{ disk.total }}</div></div>
+            <div class="property-row compact"><div class="property-label">Used</div><div class="property-value">{{ disk.used }}</div></div>
+            <div class="property-row compact"><div class="property-label">Free</div><div class="property-value">{{ disk.free }}</div></div>
+            <div class="property-row compact"><div class="property-label">Usage</div><div class="property-value">{{ disk.percent }}</div></div>
+        </div>
+        <div class="card">
+            <h3>Docker Summary</h3>
+            <div class="property-row compact"><div class="property-label">Containers</div><div class="property-value">{{ docker_summary.total }}</div></div>
+            <div class="property-row compact"><div class="property-label">Running</div><div class="property-value green">{{ docker_summary.running }}</div></div>
+            <div class="property-row compact"><div class="property-label">Healthy</div><div class="property-value green">{{ docker_summary.healthy }}</div></div>
+            <div class="property-row compact"><div class="property-label">Not Monitored</div><div class="property-value gray">{{ docker_summary.not_monitored }}</div></div>
+        </div>
+        <div class="card">
+            <h3>Latest Backup</h3>
+            {% if latest_backup %}
+                <strong>{{ latest_backup.display_name }}</strong><br>
+                <span class="muted">{{ latest_backup.path }}</span>
+                <div class="property-row compact"><div class="property-label">Type</div><div class="property-value">{{ latest_backup.type }}</div></div>
+                <div class="property-row compact"><div class="property-label">Created</div><div class="property-value">{{ latest_backup.created }}</div></div>
+                <div class="property-row compact"><div class="property-label">Status</div><div class="property-value {% if latest_backup.status == 'Verified' %}green{% elif latest_backup.status == 'Failed' or latest_backup.status == 'Invalid' %}red{% else %}yellow{% endif %}">{{ latest_backup.status }}</div></div>
+                <div class="property-row compact"><div class="property-label">Total Size</div><div class="property-value">{{ latest_backup.total_size }}</div></div>
+            {% else %}
+                <p>No backups found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <h2>ACE Server Status</h2>
+    <div class="grid-2">
+        <div class="card">
+            <h3>ACE World</h3>
+            <div class="property-row"><div class="property-label">Server Status</div><div class="property-value {% if ace_status.server_status == 'Online' %}green{% elif ace_status.server_status == 'Degraded' %}yellow{% else %}red{% endif %}">{{ ace_status.server_status }}</div></div>
+            <div class="property-row"><div class="property-label">Container State</div><div class="property-value">{{ ace_status.container_state }}</div></div>
+            <div class="property-row"><div class="property-label">Docker Health</div><div class="property-value">{{ ace_status.docker_health }}</div></div>
+            <div class="property-row"><div class="property-label">ACE Process</div><div class="property-value">{{ ace_status.ace_process }}</div></div>
+            <div class="property-row"><div class="property-label">Server Uptime</div><div class="property-value">{{ ace_status.server_uptime }}</div></div>
+        </div>
+        <div class="card">
+            <h3>Database and Integration</h3>
+            <div class="property-row"><div class="property-label">Database TCP</div><div class="property-value {% if ace_status.database_tcp == 'Connected' %}green{% else %}red{% endif %}">{{ ace_status.database_tcp }}</div></div>
+            <div class="property-row"><div class="property-label">Database Auth</div><div class="property-value gray">{{ ace_status.database_auth }}</div></div>
+            <div class="property-row"><div class="property-label">Players</div><div class="property-value gray">{{ ace_status.players }}</div></div>
+            <div class="property-row"><div class="property-label">World</div><div class="property-value gray">{{ ace_status.world }}</div></div>
+            <div class="property-row"><div class="property-label">Server Version</div><div class="property-value gray">{{ ace_status.server_version }}</div></div>
+            <div class="property-row"><div class="property-label">Checked</div><div class="property-value">{{ ace_status.checked_at }}</div></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Alerts</h3>
+        {% if ace_status.last_error == 'None' %}
+            <p class="green">No ACE errors detected in recent logs.</p>
+        {% else %}
+            <p class="yellow">{{ ace_status.last_error }}</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'docker' %}
+<section id="docker">
+    <h2>Docker Management</h2>
+    <p class="muted">Docker management workspace. View and Logs are functional for all containers. Restart is enabled only for ace-server. Start and Stop remain disabled.</p>
+    <div class="grid-2">
+        <div class="card">
+            <h3>Container Summary</h3>
+            <div class="metric-grid">
+                <div class="metric-label">Running</div><div class="metric-value green">{{ docker_summary.running }}</div>
+                <div class="metric-label">Healthy</div><div class="metric-value green">{{ docker_summary.healthy }}</div>
+                <div class="metric-label">Stopped</div><div class="metric-value">{{ docker_summary.stopped }}</div>
+                <div class="metric-label">Unhealthy</div><div class="metric-value red">{{ docker_summary.unhealthy }}</div>
+                <div class="metric-label">Total</div><div class="metric-value">{{ docker_summary.total }}</div>
+                <div class="metric-label">Not Monitored</div><div class="metric-value gray">{{ docker_summary.not_monitored }}</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Docker Resources</h3>
+            <div class="property-row compact"><div class="property-label">Containers</div><div class="property-value">{{ docker_resources.containers }}</div></div>
+            <div class="property-row compact"><div class="property-label">Images</div><div class="property-value">{{ docker_resources.images }}</div></div>
+            <div class="property-row compact"><div class="property-label">Networks</div><div class="property-value">{{ docker_resources.networks }}</div></div>
+            <div class="property-row compact"><div class="property-label">Volumes</div><div class="property-value">{{ docker_resources.volumes }}</div></div>
+        </div>
+    </div>
+    {% if selected_logs %}
+    <div class="card">
+        <h3>Container Logs: {{ selected_container }}</h3>
+        <form method="get" action="/docker/logs/{{ selected_container }}">
+            <label>Lines:
+                <select name="lines">
+                    {% for n in [50, 100, 250, 500] %}
+                    <option value="{{ n }}" {% if selected_log_lines == n %}selected{% endif %}>{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="button" type="submit">Refresh Logs</button>
+        </form>
+        <pre>{{ selected_logs }}</pre>
+    </div>
+    {% endif %}
+    <div class="grid-3">
+        {% for c in containers %}
+        <div class="card">
+            <div class="card-title-line">
+                <div><h3>{{ c.friendly_name }}</h3><span class="muted">{{ c.name }} · {{ c.subtitle }}</span></div>
+                <span class="badge {% if c.health_normalized == 'healthy' %}green{% elif c.health_normalized == 'unhealthy' %}red{% elif c.health_normalized == 'not_monitored' %}gray{% else %}yellow{% endif %}">{{ c.health_display }}</span>
+            </div>
+            <div class="property-row"><div class="property-label">Status</div><div class="property-value">{{ c.status_display }}</div></div>
+            <div class="property-row"><div class="property-label">State</div><div class="property-value">{{ c.state_display }}</div></div>
+            <div class="property-row"><div class="property-label">Health</div><div class="property-value {% if c.health_normalized == 'healthy' %}green{% elif c.health_normalized == 'unhealthy' %}red{% elif c.health_normalized == 'not_monitored' %}gray{% else %}yellow{% endif %}">{{ c.health_display }}</div></div>
+            <div class="property-row"><div class="property-label">Container ID</div><div class="property-value">{{ c.container_id }}</div></div>
+            <div class="property-row"><div class="property-label">Restart Policy</div><div class="property-value">{{ c.restart_policy }}</div></div>
+            <div class="property-row"><div class="property-label">Restart Count</div><div class="property-value">{{ c.restart_count }}</div></div>
+            <div class="property-row"><div class="property-label">Created</div><div class="property-value">{{ c.created }}</div></div>
+            <div class="property-row"><div class="property-label">Started</div><div class="property-value">{{ c.started }}</div></div>
+            <div class="property-row"><div class="property-label">Uptime</div><div class="property-value">{{ c.uptime }}</div></div>
+            <details><summary>Ports</summary><pre>{{ c.ports }}</pre></details>
+            <details><summary>Networks</summary><pre>{{ c.networks }}</pre></details>
+            <details><summary>Mounts</summary><pre>{{ c.mounts }}</pre></details>
+            <div class="actions">
+                <a class="button" href="/docker#docker">View</a>
+                <a class="button" href="/docker/logs/{{ c.name }}?lines=100#docker">Logs</a>
+                {% if c.can_restart %}
+                <form method="post" action="/docker/restart/{{ c.name }}" style="display:inline"><button class="button" type="submit">Restart</button></form>
+                {% else %}
+                <button class="button" disabled>Restart</button>
+                {% endif %}
+                <button class="button" disabled>Stop</button>
+                <button class="button" disabled>Start</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'backups' %}
+<section id="backups">
+    {% if message %}
+    <div class="notice {{ message.type }}">
+        <strong>{{ message.text }}</strong>
+        {% if message.detail %}<details><summary>Show full output</summary><pre>{{ message.detail }}</pre></details>{% endif %}
+    </div>
+    {% endif %}
+    <h2>Backup Management</h2>
+    <p class="muted">Backup discovery, validation, manifest viewing, backup details, and runtime backup creation through the existing backup.sh script are functional. Restore and delete remain disabled until guarded workflows are added.</p>
+    <form method="post" action="/backups/create-runtime" style="display:inline"><button class="button" type="submit">Create Runtime Backup</button></form>
+    <a class="button" href="/backups#backups">Refresh</a>
+    <span class="muted">Script: /opt/acserver/scripts/backup.sh</span>
+    <br><br>
+    <div class="grid-2">
+        <div class="card"><h3>Backup Summary</h3>
+            <div class="metric-grid">
+                <div class="metric-label">Total</div><div class="metric-value">{{ backup_summary.total }}</div>
+                <div class="metric-label">Verified</div><div class="metric-value green">{{ backup_summary.verified }}</div>
+                <div class="metric-label">Runtime</div><div class="metric-value">{{ backup_summary.runtime }}</div>
+                <div class="metric-label">Partial</div><div class="metric-value yellow">{{ backup_summary.partial }}</div>
+                <div class="metric-label">Baseline</div><div class="metric-value">{{ backup_summary.baseline }}</div>
+                <div class="metric-label">Failed</div><div class="metric-value red">{{ backup_summary.failed }}</div>
+                <div class="metric-label">Invalid</div><div class="metric-value red">{{ backup_summary.invalid }}</div>
+            </div>
+        </div>
+        <div class="card"><h3>Backup Storage</h3>
+            <div class="property-row compact"><div class="property-label">Total Size</div><div class="property-value">{{ backup_storage.total_size }}</div></div>
+            <div class="property-row compact"><div class="property-label">With Manifest</div><div class="property-value green">{{ backup_storage.with_manifest }}</div></div>
+            <div class="property-row compact"><div class="property-label">Without Manifest</div><div class="property-value yellow">{{ backup_storage.without_manifest }}</div></div>
+            <div class="property-row compact"><div class="property-label">Latest</div><div class="property-value">{{ backup_storage.latest }}</div></div>
+        </div>
+    </div>
+    <div class="grid-4">
+        {% for b in backups %}
+        <div class="card">
+            <div class="card-title-line"><div><h3>{{ b.display_name }}</h3><span class="muted">{{ b.path }}</span></div>
+            <span class="badge {% if b.status == 'Verified' %}green{% elif b.status == 'Failed' or b.status == 'Invalid' %}red{% else %}yellow{% endif %}">{{ b.status }}</span></div>
+            <div class="property-row compact"><div class="property-label">Type</div><div class="property-value">{{ b.type }}</div></div>
+            <div class="property-row compact"><div class="property-label">Created</div><div class="property-value">{{ b.created }}</div></div>
+            <div class="property-row compact"><div class="property-label">Age</div><div class="property-value">{{ b.age }}</div></div>
+            <div class="property-row compact"><div class="property-label">Files</div><div class="property-value">{{ b.file_count }}</div></div>
+            <div class="property-row compact"><div class="property-label">Total Size</div><div class="property-value">{{ b.total_size }}</div></div>
+            <div class="property-row compact"><div class="property-label">Manifest</div><div class="property-value {% if b.has_manifest %}green{% else %}yellow{% endif %}">{{ "Present" if b.has_manifest else "Missing" }}</div></div>
+            <p class="muted">{{ b.status_message }}</p>
+            {% if b.failure %}<details><summary>Failure details</summary><pre>{{ b.failure }}</pre></details>{% endif %}
+            {% if b.missing %}<details><summary>Validation warnings</summary><ul>{% for m in b.missing %}<li>{{ m }}</li>{% endfor %}</ul></details>{% endif %}
+            <details><summary>Files</summary><ul>{% for f in b.files %}<li>{{ f.name }} ({{ f.size }})</li>{% endfor %}</ul></details>
+            {% if b.manifest %}<details><summary>Manifest</summary><pre>{{ b.manifest }}</pre></details>{% endif %}
+            <div class="actions"><button class="button">View</button><button class="button" disabled>Restore</button><button class="button" disabled>Delete</button></div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'logs' %}
+<section id="logs">
+    <h2>ACE Log Viewer</h2>
+    <p class="muted">Phase 2.2 adds a structured ACE operations log workspace with selectable sources, severity filtering, search, line limits, and normalized log summaries.</p>
+    <form class="filter-bar" method="get" action="/logs#logs">
+        <label>Source
+            <select name="source">
+                {% for source in log_sources %}
+                <option value="{{ source.key }}" {% if log_view.source == source.key %}selected{% endif %}>{{ source.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Severity
+            <select name="severity">
+                {% for level in ['all', 'error', 'warning', 'info'] %}
+                <option value="{{ level }}" {% if log_view.severity == level %}selected{% endif %}>{{ level|title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Lines
+            <select name="lines">
+                {% for n in [50, 100, 150, 250, 500] %}
+                <option value="{{ n }}" {% if log_view.lines == n %}selected{% endif %}>{{ n }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Search
+            <input type="text" name="search" value="{{ log_view.search }}" placeholder="message text">
+        </label>
+        <button class="button" type="submit">Apply</button>
+        <a class="button" href="/logs#logs">Reset</a>
+    </form>
+    <div class="grid-3">
+        <div class="card"><h3>Selected Source</h3>
+            <div class="property-row compact"><div class="property-label">Source</div><div class="property-value">{{ log_view.source_label }}</div></div>
+            <div class="property-row compact"><div class="property-label">Container</div><div class="property-value">{{ log_view.container }}</div></div>
+            <div class="property-row compact"><div class="property-label">Checked</div><div class="property-value">{{ log_view.generated_at }}</div></div>
+        </div>
+        <div class="card"><h3>Raw Summary</h3>
+            <div class="metric-grid compact-metrics">
+                <div class="metric-label">Lines</div><div class="metric-value">{{ log_view.summary.total }}</div>
+                <div class="metric-label">Errors</div><div class="metric-value red">{{ log_view.summary.errors }}</div>
+                <div class="metric-label">Warnings</div><div class="metric-value yellow">{{ log_view.summary.warnings }}</div>
+                <div class="metric-label">Info</div><div class="metric-value green">{{ log_view.summary.info }}</div>
+            </div>
+        </div>
+        <div class="card"><h3>Filtered Result</h3>
+            <div class="property-row compact"><div class="property-label">Visible</div><div class="property-value">{{ log_view.entry_count }} of {{ log_view.raw_count }}</div></div>
+            <div class="property-row compact"><div class="property-label">Severity</div><div class="property-value">{{ log_view.severity|title }}</div></div>
+            <div class="property-row compact"><div class="property-label">Search</div><div class="property-value">{{ log_view.search if log_view.search else 'None' }}</div></div>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Log Entries</h3>
+        {% if log_view.entries %}
+        <table class="data-table">
+            <thead><tr><th>Time</th><th>Severity</th><th>Message</th></tr></thead>
+            <tbody>
+            {% for entry in log_view.entries %}
+            <tr>
+                <td>{{ entry.timestamp }}</td>
+                <td class="{% if entry.severity == 'error' %}red{% elif entry.severity == 'warning' %}yellow{% else %}green{% endif %}">{{ entry.severity|title }}</td>
+                <td><code>{{ entry.message }}</code></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="yellow">No log entries matched the selected filters.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+
+{% if active_tab == 'management' %}
+<section id="management">
+    <h2>ACE Management Utility</h2>
+    <p class="muted">Phase 2.4.1b keeps wrapper integration compact and guarded. Session-interrupting rebuild/restart actions are documented with Dry Run only until queued execution and browser reconnect handling are added.</p>
+
+    <div class="ops-status-grid">
+        <div class="ops-status-card">
+            <span class="ops-label">Wrapper</span>
+            <span class="ops-value {% if management.available and management.executable %}green{% else %}red{% endif %}">{{ 'Online' if management.available and management.executable else 'Unavailable' }}</span>
+        </div>
+        <div class="ops-status-card">
+            <span class="ops-label">Version</span>
+            <span class="ops-value">{{ management.version }}</span>
+        </div>
+        <div class="ops-status-card">
+            <span class="ops-label">Mode</span>
+            <span class="ops-value green">Guarded</span>
+        </div>
+        <div class="ops-status-card">
+            <span class="ops-label">Actions</span>
+            <span class="ops-value">{{ management.command_count }}</span>
+        </div>
+    </div>
+
+    <div class="card compact-card">
+        <div class="card-title-line">
+            <div>
+                <h3>Operations Console</h3>
+                <p class="muted">Only whitelisted non-interactive manage.sh actions are exposed. Shell actions remain SSH/manual only.</p>
+            </div>
+            <span class="badge {% if management.available and management.executable %}green{% else %}red{% endif %}">{{ 'Ready' if management.available and management.executable else 'Not Ready' }}</span>
+        </div>
+        <div class="property-row compact"><div class="property-label">Wrapper</div><div class="property-value"><code>{{ management.wrapper }}</code></div></div>
+    </div>
+
+    {% if message and message.result %}
+    <div class="card management-console" id="management-console">
+        <div class="card-title-line">
+            <div>
+                <h3>Last Command Output</h3>
+                <p class="muted"><code>{{ message.result.command }}</code> exited with code {{ message.result.exit_code }}.</p>
+            </div>
+            <span class="badge {% if message.result.success %}green{% else %}red{% endif %}">{{ 'OK' if message.result.success else 'Failed' }}</span>
+        </div>
+        {% if message.result.stdout %}
+        <h4>Output</h4>
+        <pre>{{ message.result.stdout }}</pre>
+        {% endif %}
+        {% if message.result.stderr %}
+        <h4>Errors</h4>
+        <pre>{{ message.result.stderr }}</pre>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="ops-filter-row">
+        <input type="text" id="ops-filter" placeholder="Filter actions..." aria-label="Filter management actions">
+        <span class="muted">Cards are limited to subsystem groups. Use the filter or collapse sections instead of adding more cards.</span>
+    </div>
+
+    <div class="ops-groups">
+    {% for group in management.groups %}
+    <details class="card ops-group" open>
+        <summary class="ops-summary"><span>{{ group.group }}</span><span class="muted">{{ group.actions|length }} actions</span></summary>
+        <div class="ops-action-list">
+            {% for item in group.actions %}
+            <div class="ops-action-row" data-filter-text="{{ group.group|lower }} {{ item.label|lower }} {{ item.description|lower }} {{ item.command|lower }} {{ item.type|lower }}">
+                <div class="ops-action-main">
+                    <div class="ops-action-title">
+                        <strong>{{ item.label }}</strong>
+                        <span class="badge {% if item.type == 'Read' %}green{% else %}yellow{% endif %}">{{ item.type }}</span>
+                    </div>
+                    <div class="muted">{{ item.description }}</div>
+                    {% if item.web_enabled is sameas false %}<div class="muted yellow">Manual/SSH recommended: {{ item.manual_reason }}</div>{% endif %}
+                    <details class="command-details"><summary>Show command</summary><code>{{ item.command }}</code></details>
+                </div>
+                <div class="ops-action-buttons">
+                    <form method="post" action="{{ url_for('management.management_run') }}" class="management-action-form" data-label="{{ item.label }}" data-confirm="{{ '1' if item.confirm else '0' }}">
+                        <input type="hidden" name="action_id" value="{{ item.id }}">
+                        <button class="button" type="submit" {% if item.web_enabled is sameas false %}disabled title="Use Dry Run here and run this from SSH/manual control for now."{% endif %}>Run</button>
+                    </form>
+                    {% if item.dry_run %}
+                    <form method="post" action="{{ url_for('management.management_run') }}" class="management-action-form" data-label="Dry Run {{ item.label }}" data-confirm="0">
+                        <input type="hidden" name="action_id" value="{{ item.id }}">
+                        <input type="hidden" name="dry_run" value="1">
+                        <button class="button" type="submit">Dry Run</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endfor %}
+    </div>
+
+    <details class="card" open>
+        <summary class="ops-summary"><span>Recent Management Activity</span><span class="muted">Last recorded dashboard-run commands</span></summary>
+        {% if management.last_runs %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Time</th><th>Action</th><th>Command</th><th>Exit</th><th>Result</th></tr></thead>
+            <tbody>
+            {% for run in management.last_runs %}
+            <tr>
+                <td>{{ run.timestamp }}</td>
+                <td>{{ run.label }}</td>
+                <td><code>{{ run.command }}</code></td>
+                <td>{{ run.exit_code }}</td>
+                <td class="{% if run.success %}green{% else %}red{% endif %}">{{ 'OK' if run.success else 'Failed' }}{% if run.dry_run %} / Dry Run{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No dashboard-managed wrapper actions have been recorded yet.</p>
+        {% endif %}
+    </details>
+</section>
+<script>
+(function(){
+    const filter = document.getElementById('ops-filter');
+    if (filter) {
+        filter.addEventListener('input', function(){
+            const q = filter.value.trim().toLowerCase();
+            document.querySelectorAll('.ops-action-row').forEach(function(row){
+                row.style.display = !q || row.dataset.filterText.indexOf(q) !== -1 ? '' : 'none';
+            });
+        });
+    }
+    document.querySelectorAll('.management-action-form').forEach(function(form){
+        form.addEventListener('submit', function(event){
+            const label = form.dataset.label || 'management action';
+            if (form.dataset.confirm === '1' && !confirm('Run ' + label + ' through the ACE Management Utility?')) {
+                event.preventDefault();
+                return;
+            }
+            form.querySelectorAll('button').forEach(function(button){
+                button.disabled = true;
+                button.textContent = 'Running...';
+            });
+        });
+    });
+})();
+</script>
+{% endif %}
+
+{% if active_tab == 'about' %}
+<section id="about"><h2>About</h2><div class="card"><h3>{{ project.product }}</h3>
+<div class="property-row"><div class="property-label">Version</div><div class="property-value">{{ project.version }}</div></div>
+<div class="property-row"><div class="property-label">Phase</div><div class="property-value">{{ project.phase }}</div></div>
+<div class="property-row"><div class="property-label">Milestone</div><div class="property-value">{{ project.milestone }}</div></div>
+<div class="property-row"><div class="property-label">Status</div><div class="property-value">{{ project.status }}</div></div>
+<div class="property-row"><div class="property-label">Build</div><div class="property-value">{{ project.build }}</div></div>
+<div class="property-row"><div class="property-label">Python</div><div class="property-value">{{ project.python }}</div></div>
+</div></section>
+{% endif %}
+</body>
+</html>

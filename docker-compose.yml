@@ -1,0 +1,45 @@
+services:
+  ace-db:
+    image: mysql:8.0
+    container_name: ace-db
+    env_file:
+      - .env
+    volumes:
+      - ./database/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306/tcp"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  ace-server:
+    image: acemulator/ace:latest
+    container_name: ace-server
+    env_file:
+      - .env
+    depends_on:
+      ace-db:
+        condition: service_healthy
+    volumes:
+      - ./ace/Config:/ace/Config
+      - ./ace/Content:/ace/Content
+      - ./ace/Dats:/ace/Dats
+      - ./ace/Logs:/ace/Logs
+      - ./ace/Mods:/ace/Mods
+    ports:
+      - "9000-9001:9000-9001/udp"
+    stdin_open: true
+    restart: unless-stopped
+
+  ace-dashboard:
+    build: ./dashboard
+    container_name: ace-dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/opt/acserver
+    ports:
+      - "8080:8080/tcp"
+    restart: unless-stopped
