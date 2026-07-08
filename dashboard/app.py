@@ -6,6 +6,7 @@ from routes.dashboard_routes import dashboard_bp
 from routes.docker_routes import docker_bp
 from routes.log_routes import logs_bp
 from routes.management_routes import management_bp
+from routes.health_routes import health_bp
 
 
 def create_app() -> Flask:
@@ -15,6 +16,7 @@ def create_app() -> Flask:
     app.register_blueprint(backup_bp)
     app.register_blueprint(logs_bp)
     app.register_blueprint(management_bp)
+    app.register_blueprint(health_bp)
     app.register_blueprint(about_bp)
     return app
 

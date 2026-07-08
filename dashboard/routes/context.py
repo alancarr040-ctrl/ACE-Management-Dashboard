@@ -7,12 +7,14 @@ from services.docker_service import DockerService
 from services.project_service import ProjectService
 from services.system_service import SystemService
 from services.management_service import ManagementService
+from services.health_service import HealthService
 
 docker_service = DockerService()
 backup_service = BackupService()
 project_service = ProjectService()
 system_service = SystemService()
 management_service = ManagementService()
+health_service = HealthService(docker_service, backup_service, system_service, management_service)
 ace_status_service = ACEStatusService(docker_service)
 ace_log_service = ACELogService(docker_service)
 

@@ -75,6 +75,95 @@
 </section>
 {% endif %}
 
+
+{% if active_tab == 'health' %}
+<section id="health" data-auto-refresh="30">
+    <div class="card health-hero {{ health.overall.level }}">
+        <div>
+            <h2>Operational Health</h2>
+            <p>{{ health.overall.message }}</p>
+            <span class="muted">Last checked: {{ health.generated_at }} · Auto-refresh: 30 seconds</span>
+        </div>
+        <div class="health-status-pill {{ health.overall.level }}">{{ health.overall.label }}</div>
+    </div>
+
+    <div class="grid-4 health-metrics">
+        <div class="card compact-card"><h3>Checks</h3><div class="metric-value">{{ health.summary.checks }}</div><span class="muted">{{ health.summary.ok }} OK · {{ health.summary.warning }} warning · {{ health.summary.critical }} critical</span></div>
+        <div class="card compact-card"><h3>Containers</h3><div class="metric-value">{{ health.summary.running }}/{{ health.summary.containers }}</div><span class="muted">Running containers</span></div>
+        <div class="card compact-card"><h3>Disk</h3><div class="metric-value">{{ health.disk.percent }}</div><span class="muted">Free: {{ health.disk.free }}</span></div>
+        <div class="card compact-card"><h3>Backups</h3><div class="metric-value">{{ health.backup.latest_status }}</div><span class="muted">Latest: {{ health.backup.latest_age or health.backup.latest }}</span></div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Core Services</h3>
+            <table class="data-table compact-table">
+                <thead><tr><th>Service</th><th>State</th><th>Health</th><th>Uptime</th></tr></thead>
+                <tbody>
+                {% for service in health.services %}
+                    <tr>
+                        <td><strong>{{ service.label }}</strong><br><span class="muted">{{ service.role }}</span></td>
+                        <td><span class="badge {{ 'green' if service.level == 'ok' else 'yellow' if service.level == 'warning' else 'red' }}">{{ service.state }}</span></td>
+                        <td>{{ service.health }}</td>
+                        <td>{{ service.uptime }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Operational Readiness</h3>
+            <div class="property-row compact"><div class="property-label">Wrapper</div><div class="property-value {% if health.wrapper.available and health.wrapper.executable %}green{% else %}red{% endif %}">{{ health.wrapper.version }}</div></div>
+            <div class="property-row compact"><div class="property-label">Actions</div><div class="property-value">{{ health.wrapper.actions }}</div></div>
+            <div class="property-row compact"><div class="property-label">Backups</div><div class="property-value">{{ health.backup.verified }} verified / {{ health.backup.total }} total</div></div>
+            <div class="property-row compact"><div class="property-label">Failures</div><div class="property-value {% if health.summary.recent_failures %}yellow{% else %}green{% endif %}">{{ health.summary.recent_failures }}</div></div>
+            <p class="muted">This page is read-only. Corrective actions remain on the Management page or SSH/manual workflows.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Health Checks</h3>
+        <table class="data-table compact-table">
+            <thead><tr><th>Status</th><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
+            <tbody>
+            {% for check in health.checks %}
+                <tr>
+                    <td><span class="badge {{ 'green' if check.level == 'ok' else 'yellow' if check.level == 'warning' else 'red' }}">{{ check.level|title }}</span></td>
+                    <td>{{ check.name }}</td>
+                    <td>{{ check.status }}</td>
+                    <td>{{ check.detail }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Recent Management Failures</h3>
+        {% if health.recent_failures %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Time</th><th>Action</th><th>Command</th><th>Exit</th></tr></thead>
+            <tbody>
+            {% for run in health.recent_failures %}
+                <tr><td>{{ run.timestamp }}</td><td>{{ run.label }}</td><td><code>{{ run.command }}</code></td><td class="red">{{ run.exit_code }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="green">No recent failed management actions.</p>
+        {% endif %}
+    </div>
+</section>
+<script>
+(function(){
+  var health = document.getElementById('health');
+  if (!health) return;
+  var seconds = parseInt(health.getAttribute('data-auto-refresh') || '30', 10);
+  if (seconds > 0) window.setTimeout(function(){ window.location.reload(); }, seconds * 1000);
+})();
+</script>
+{% endif %}
+
 {% if active_tab == 'docker' %}
 <section id="docker">
     <h2>Docker Management</h2>
