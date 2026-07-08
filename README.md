@@ -6,9 +6,9 @@ The ACE Management Dashboard is the web management interface for the local ACE D
 
 | Field | Value |
 |---|---|
-| Version | 2.4.1-dev |
+| Version | 2.6.0-dev |
 | Phase | 2 - ACE Server Management |
-| Milestone | 2.4.1 - Operations Console Refinement |
+| Milestone | 2.6.0 - Operational Monitoring & Events |
 | Build | 2026.07.08-241 |
 
 ## Current capabilities
@@ -52,7 +52,7 @@ Common commands:
 ./manage.sh version
 ```
 
-2.4.1 exposes approved wrapper actions through a compact operations console in the Management tab. 2.3.1 added command-order tolerance and dry-run support:
+2.6.0 adds an Operational Events workspace and event journal for health transitions and management command results. 2.5.0 added the read-only Health page, and 2.4.1 exposes approved wrapper actions through a compact operations console:
 
 ```bash
 ./manage.sh --dry-run restart server

@@ -184,8 +184,8 @@ class HealthService:
             return []
         failures = [r for r in management.get("last_runs", []) if not r.get("success")]
         if not failures:
-            return [self._check("Recent management failures", "ok", "None", "No failed wrapper actions in recent activity.")]
-        return [self._check("Recent management failures", "warning", str(len(failures)), "One or more recent wrapper actions exited unsuccessfully.")]
+            return [self._check("Recent command errors", "ok", "None", "No failed management commands in recent activity.")]
+        return [self._check("Recent command errors", "warning", str(len(failures)), "One or more recent management commands exited unsuccessfully.")]
 
     def _overall_status(self, checks: list[dict[str, Any]]) -> dict[str, str]:
         if any(c["level"] == "critical" for c in checks):

@@ -116,7 +116,7 @@
             <div class="property-row compact"><div class="property-label">Wrapper</div><div class="property-value {% if health.wrapper.available and health.wrapper.executable %}green{% else %}red{% endif %}">{{ health.wrapper.version }}</div></div>
             <div class="property-row compact"><div class="property-label">Actions</div><div class="property-value">{{ health.wrapper.actions }}</div></div>
             <div class="property-row compact"><div class="property-label">Backups</div><div class="property-value">{{ health.backup.verified }} verified / {{ health.backup.total }} total</div></div>
-            <div class="property-row compact"><div class="property-label">Failures</div><div class="property-value {% if health.summary.recent_failures %}yellow{% else %}green{% endif %}">{{ health.summary.recent_failures }}</div></div>
+            <div class="property-row compact"><div class="property-label">Command Errors</div><div class="property-value {% if health.summary.recent_failures %}yellow{% else %}green{% endif %}">{{ health.summary.recent_failures }}</div></div>
             <p class="muted">This page is read-only. Corrective actions remain on the Management page or SSH/manual workflows.</p>
         </div>
     </div>
@@ -139,7 +139,7 @@
     </div>
 
     <div class="card">
-        <h3>Recent Management Failures</h3>
+        <h3>Recent Command Errors</h3>
         {% if health.recent_failures %}
         <table class="data-table compact-table">
             <thead><tr><th>Time</th><th>Action</th><th>Command</th><th>Exit</th></tr></thead>
@@ -153,6 +153,30 @@
         <p class="green">No recent failed management actions.</p>
         {% endif %}
     </div>
+
+    <div class="card">
+        <div class="card-title-line">
+            <h3>Recent Operational Events</h3>
+            <a class="button" href="/events#events">View All</a>
+        </div>
+        {% if recent_events %}
+        <div class="event-list compact-event-list">
+            {% for event in recent_events %}
+            <div class="event-row {{ event.severity }}">
+                <div class="event-time">{{ event.display_time }}</div>
+                <div class="event-main">
+                    <strong>{{ event.title }}</strong>
+                    <span class="muted">{{ event.entity }}</span><br>
+                    <span>{{ event.message }}</span>
+                </div>
+                <span class="badge {{ 'red' if event.severity == 'critical' else 'yellow' if event.severity == 'warning' else 'green' if event.severity == 'ok' else 'gray' }}">{{ event.severity|title }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="muted">No operational events have been recorded yet. Events are created when health states or management actions change.</p>
+        {% endif %}
+    </div>
 </section>
 <script>
 (function(){
@@ -162,6 +186,80 @@
   if (seconds > 0) window.setTimeout(function(){ window.location.reload(); }, seconds * 1000);
 })();
 </script>
+{% endif %}
+
+
+{% if active_tab == 'events' %}
+<section id="events">
+    <div class="card health-hero {{ 'critical' if event_summary.critical else 'warning' if event_summary.warning else 'ok' }}">
+        <div>
+            <h2>Operational Events</h2>
+            <p>Timeline of health transitions and management command results.</p>
+            <span class="muted">Showing recent events from the local JSONL event journal.</span>
+        </div>
+        <div class="health-status-pill {{ 'critical' if event_summary.critical else 'warning' if event_summary.warning else 'ok' }}">{{ event_summary.total }} Events</div>
+    </div>
+
+    <div class="grid-4 health-metrics">
+        <div class="card compact-card"><h3>Recent</h3><div class="metric-value">{{ event_summary.recent }}</div><span class="muted">Last 50 retained events</span></div>
+        <div class="card compact-card"><h3>Critical</h3><div class="metric-value red">{{ event_summary.critical }}</div><span class="muted">Recent critical events</span></div>
+        <div class="card compact-card"><h3>Warnings</h3><div class="metric-value yellow">{{ event_summary.warning }}</div><span class="muted">Recent warning events</span></div>
+        <div class="card compact-card"><h3>Info</h3><div class="metric-value">{{ event_summary.info }}</div><span class="muted">Recent informational events</span></div>
+    </div>
+
+    <div class="card">
+        <form class="filter-bar" method="get" action="/events#events">
+            <label>Severity
+                <select name="severity">
+                    <option value="" {% if not event_filters.severity %}selected{% endif %}>All</option>
+                    {% for sev in ['critical', 'warning', 'info', 'ok'] %}
+                    <option value="{{ sev }}" {% if event_filters.severity == sev %}selected{% endif %}>{{ sev|title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Source
+                <select name="source">
+                    <option value="" {% if not event_filters.source %}selected{% endif %}>All</option>
+                    {% for src in ['health', 'management', 'events'] %}
+                    <option value="{{ src }}" {% if event_filters.source == src %}selected{% endif %}>{{ src|title }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Limit
+                <select name="limit">
+                    {% for n in [25, 50, 100, 200] %}
+                    <option value="{{ n }}" {% if event_filters.limit == n %}selected{% endif %}>{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button class="button" type="submit">Apply</button>
+            <a class="button" href="/events#events">Reset</a>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>Event Timeline</h3>
+        {% if events %}
+        <table class="data-table compact-table event-table">
+            <thead><tr><th>Time</th><th>Severity</th><th>Source</th><th>Event</th><th>Entity</th><th>Detail</th></tr></thead>
+            <tbody>
+            {% for event in events %}
+                <tr>
+                    <td>{{ event.display_time }}</td>
+                    <td><span class="badge {{ 'red' if event.severity == 'critical' else 'yellow' if event.severity == 'warning' else 'green' if event.severity == 'ok' else 'gray' }}">{{ event.severity|title }}</span></td>
+                    <td>{{ event.source|title }}</td>
+                    <td><strong>{{ event.title }}</strong></td>
+                    <td>{{ event.entity }}</td>
+                    <td>{{ event.message }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No events match the selected filters.</p>
+        {% endif %}
+    </div>
+</section>
 {% endif %}
 
 {% if active_tab == 'docker' %}

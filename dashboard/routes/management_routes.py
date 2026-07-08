@@ -1,5 +1,5 @@
 from flask import Blueprint, redirect, render_template, request, url_for
-from routes.context import common_context, management_service
+from routes.context import common_context, management_service, event_service
 
 management_bp = Blueprint('management', __name__)
 
@@ -16,6 +16,7 @@ def management_run():
     action_id = request.form.get('action_id', '').strip()
     dry_run = request.form.get('dry_run') == '1'
     result = management_service.run_action(action_id, dry_run=dry_run)
+    event_service.record_management_result(result)
     message = {
         'type': 'success' if result.get('success') else 'error',
         'title': result.get('label', 'Management Action'),
