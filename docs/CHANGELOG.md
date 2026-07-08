@@ -44,3 +44,10 @@
 - Installed docker-compose-plugin in the dashboard image.
 - Added provider detection for `docker compose` and `docker-compose`.
 - Improved doctor diagnostics for Compose and Docker socket visibility.
+
+## 2.6.1 - Roadmap & Vision
+
+- Added public roadmap, project vision, and product naming standards.
+- Established ACE Management Dashboard / ACEMD terminology.
+- Clarified the distinction between ACEMD and the ACE emulator/server.
+- Documented the path from platform foundation to account, character, player, world, and database administration.

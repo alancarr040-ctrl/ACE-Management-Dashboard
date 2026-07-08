@@ -1,3 +1,15 @@
+# ACE Management Dashboard Project
+
+## ACE Management Dashboard Identity
+
+**ACE Management Dashboard** (**ACEMD**) is the management platform for an ACE server deployment.
+
+ACEMD is not ACE and is not an ACE emulator fork. ACE refers to the underlying emulator/server project. ACEMD refers to this repository's dashboard, wrapper, monitoring, automation, documentation, and future ACE administration modules.
+
+See `VISION.md` and `ROADMAP.md` for the product vision and public roadmap.
+
+---
+
 # ACE Server Infrastructure Project
 
 **Project Name:** ACE Server Infrastructure
