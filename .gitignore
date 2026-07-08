@@ -17,3 +17,7 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
+
+# Other
+ACMD-Prompt-2.4.0.txt
+Test/
