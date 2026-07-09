@@ -73,3 +73,6 @@
 /* ACEMD 3.0.3 Foundation Polish */
 .empty-state{border:1px dashed #555;border-radius:6px;background:#202020;padding:14px;color:var(--muted)}
 .readonly-note{font-size:12px;color:var(--muted);margin-top:6px}.table-scroll{background:#202020}.table-scroll .data-table th,.table-scroll .data-table td{background-clip:padding-box}.metadata-source{font-size:12px;color:var(--muted)}
+
+/* ACEMD 3.1.0 Account Management */
+.pagination-bar{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:10px}.button.secondary{background:#202020}.filter-bar select{min-width:120px}

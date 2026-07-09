@@ -181,37 +181,90 @@
 {% if active_tab == 'accounts' %}
 <section id="accounts">
     <div class="card health-hero ok">
-        <div><h2>Accounts</h2><p>Read-only ACE account explorer. Password hashes and salts are intentionally never displayed.</p></div>
+        <div>
+            <h2>Account Management</h2>
+            <p>Read-only administrative account explorer built on the Phase 3 discovery framework.</p>
+            <p class="muted">Password hashes, salts, and mutation actions are intentionally not exposed.</p>
+        </div>
         <div class="health-status-pill ok">Read-only</div>
     </div>
-    <form class="filter-bar" method="get" action="/administration/accounts">
-        <label>Search account<input type="text" name="q" value="{{ search_query }}" placeholder="name or id"></label>
-        <button class="button" type="submit">Search</button>
+
+    <div class="grid-4">
+        <div class="card compact-card"><h3>Total Accounts</h3><div class="metric-value">{{ account_data.summary.total }}</div><span class="muted">Auth database</span></div>
+        <div class="card compact-card"><h3>Clear</h3><div class="metric-value green">{{ account_data.summary["clear"] }}</div><span class="muted">Not currently banned</span></div>
+        <div class="card compact-card"><h3>Banned</h3><div class="metric-value {% if account_data.summary.banned %}yellow{% else %}green{% endif %}">{{ account_data.summary.banned }}</div><span class="muted">Ban marker present</span></div>
+        <div class="card compact-card"><h3>With Characters</h3><div class="metric-value">{{ account_data.summary.with_characters }}</div><span class="muted">Linked shard characters</span></div>
+    </div>
+
+    <form class="filter-bar" method="get" action="/administration/accounts#accounts">
+        <label>Search account<input type="text" name="q" value="{{ account_data.search }}" placeholder="name or id"></label>
+        <label>Status
+            <select name="status">
+                <option value="all" {% if account_data.filters.status == 'all' %}selected{% endif %}>All</option>
+                <option value="clear" {% if account_data.filters.status == 'clear' %}selected{% endif %}>Clear</option>
+                <option value="banned" {% if account_data.filters.status == 'banned' %}selected{% endif %}>Banned</option>
+            </select>
+        </label>
+        <label>Access
+            <select name="access">
+                <option value="all" {% if account_data.filters.access == 'all' %}selected{% endif %}>All</option>
+                {% for level in account_data.access_levels %}
+                <option value="{{ level.level }}" {% if account_data.filters.access|string == level.level|string %}selected{% endif %}>{{ level.level }}{% if level.name %} · {{ level.name }}{% endif %}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Sort
+            <select name="sort">
+                <option value="accountName" {% if account_data.filters.sort == 'accountName' %}selected{% endif %}>Name</option>
+                <option value="accountId" {% if account_data.filters.sort == 'accountId' %}selected{% endif %}>ID</option>
+                <option value="accessLevel" {% if account_data.filters.sort == 'accessLevel' %}selected{% endif %}>Access</option>
+                <option value="characters" {% if account_data.filters.sort == 'characters' %}selected{% endif %}>Characters</option>
+                <option value="lastLogin" {% if account_data.filters.sort == 'lastLogin' %}selected{% endif %}>Last login</option>
+                <option value="logins" {% if account_data.filters.sort == 'logins' %}selected{% endif %}>Total logins</option>
+                <option value="created" {% if account_data.filters.sort == 'created' %}selected{% endif %}>Created</option>
+            </select>
+        </label>
+        <label>Per page
+            <select name="per_page">
+                {% for size in [10,25,50,100] %}<option value="{{ size }}" {% if account_data.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+            </select>
+        </label>
+        <button class="button" type="submit">Apply</button>
     </form>
+
     <div class="card">
-        <h3>Account Results</h3>
+        <div class="card-title-line">
+            <h3>Account Results</h3>
+            <span class="muted">Showing {{ account_data.count }} of {{ account_data.total }} account records</span>
+        </div>
         {% if account_data.error %}<p class="yellow">{{ account_data.error }}</p>{% endif %}
         {% if account_data.rows %}
         <table class="data-table compact-table">
-            <thead><tr><th>ID</th><th>Name</th><th>Access</th><th>Characters</th><th>Email</th><th>Created</th><th>Last Login</th><th>Logins</th><th>Ban Status</th></tr></thead>
+            <thead><tr><th>ID</th><th>Account</th><th>Access</th><th>Status</th><th>Characters</th><th>Created</th><th>Last Login</th><th>Total Logins</th></tr></thead>
             <tbody>
             {% for row in account_data.rows %}
                 <tr>
                     <td>{{ row.accountId }}</td>
                     <td><strong><a href="/administration/accounts/{{ row.accountId }}#account-detail">{{ row.accountName }}</a></strong></td>
-                    <td>{{ row.accessLevel }}{% if row.accessLevelName %} · {{ row.accessLevelName }}{% endif %}</td>
+                    <td>{{ row.accessLevel }}{% if row.accessLevelName %}<br><span class="muted">{{ row.accessLevelName }}</span>{% endif %}</td>
+                    <td>{% if row.ban_Status == 'Banned' %}<span class="red">Banned</span>{% else %}<span class="green">Clear</span>{% endif %}{% if row.ban_Expire_Time %}<br><span class="muted">Expires: {{ row.ban_Expire_Time }}</span>{% endif %}</td>
                     <td>{{ row.character_Count if row.character_Count is defined else '—' }}</td>
-                    <td>{{ row.email_Address or '' }}</td>
-                    <td>{{ row.create_Time or '' }}</td>
-                    <td>{{ row.last_Login_Time or '' }}</td>
+                    <td>{{ row.create_Time or '—' }}</td>
+                    <td>{{ row.login_Summary }}</td>
                     <td>{{ row.total_Times_Logged_In }}</td>
-                    <td>{% if row.banned_Time %}<span class="red">Banned</span>{% else %}<span class="green">Clear</span>{% endif %}{% if row.ban_Expire_Time %}<br><span class="muted">Expires: {{ row.ban_Expire_Time }}</span>{% endif %}</td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
+        {% if account_data.pages > 1 %}
+        <div class="actions">
+            {% if account_data.page > 1 %}<a class="button" href="/administration/accounts?q={{ account_data.search }}&status={{ account_data.filters.status }}&access={{ account_data.filters.access }}&sort={{ account_data.filters.sort }}&per_page={{ account_data.per_page }}&page={{ account_data.page - 1 }}#accounts">Previous</a>{% endif %}
+            <span class="muted">Page {{ account_data.page }} of {{ account_data.pages }}</span>
+            {% if account_data.page < account_data.pages %}<a class="button" href="/administration/accounts?q={{ account_data.search }}&status={{ account_data.filters.status }}&access={{ account_data.filters.access }}&sort={{ account_data.filters.sort }}&per_page={{ account_data.per_page }}&page={{ account_data.page + 1 }}#accounts">Next</a>{% endif %}
+        </div>
+        {% endif %}
         {% else %}
-        <p class="muted">No account rows available from the live ACE auth database.</p>
+        <p class="muted">No account rows matched the current filter.</p>
         {% endif %}
     </div>
 </section>
@@ -470,6 +523,73 @@
     {% else %}
     <div class="card"><p class="muted">Character was not found.</p></div>
     {% endif %}
+</section>
+{% endif %}
+
+
+{% if active_tab == 'knowledge' %}
+<section id="knowledge">
+    <div class="card health-hero ok">
+        <div>
+            <h2>ACE Knowledge Base</h2>
+            <p>Read-only semantic layer between ACE discovery data and administrator-facing modules.</p>
+            <p class="muted">This is where ACEMD records what raw ACE properties appear to mean, why we believe it, and whether the information is safe for future editing tools.</p>
+        </div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+
+    <div class="grid-3">
+        <div class="card compact-card"><h3>Known Entries</h3><div class="metric-value">{{ knowledge_base.summary.property_entries }}</div><span class="muted">Initial semantic mappings</span></div>
+        <div class="card compact-card"><h3>Observation Tests</h3><div class="metric-value">{{ knowledge_base.summary.observation_tests }}</div><span class="muted">Controlled discovery plans</span></div>
+        <div class="card compact-card"><h3>Write Policy</h3><div class="metric-value green">Locked</div><span class="muted">{{ knowledge_base.summary.write_policy }}</span></div>
+    </div>
+
+    <div class="card">
+        <h3>Property Dictionary Seeds</h3>
+        <p class="muted">These mappings are intentionally provenance-aware. Suspected and inferred entries are useful for display, but not enough for future write operations.</p>
+        <table class="data-table compact-table">
+            <thead><tr><th>Domain</th><th>Set</th><th>Type</th><th>Label</th><th>Semantic Key</th><th>Confidence</th><th>Source</th><th>Editable</th><th>Notes</th></tr></thead>
+            <tbody>
+            {% for entry in knowledge_base.property_entries %}
+                <tr>
+                    <td>{{ entry.domain }}</td>
+                    <td>{{ entry.set }}</td>
+                    <td>{{ entry.type }}</td>
+                    <td><strong>{{ entry.label }}</strong></td>
+                    <td>{{ entry.semantic_key }}</td>
+                    <td><span class="badge {% if entry.confidence == 'Confirmed' %}green{% elif entry.confidence == 'Inferred' %}yellow{% else %}gray{% endif %}">{{ entry.confidence }}</span></td>
+                    <td>{{ entry.source }}</td>
+                    <td>{{ entry.editable }}</td>
+                    <td>{{ entry.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Confidence Levels</h3>
+            <table class="data-table compact-table">
+                <tbody>
+                {% for item in knowledge_base.confidence_levels %}
+                    <tr><td><strong>{{ item.level }}</strong></td><td>{{ item.meaning }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Controlled Observation Plan</h3>
+            <table class="data-table compact-table">
+                <thead><tr><th>Action</th><th>Goal</th><th>Method</th></tr></thead>
+                <tbody>
+                {% for item in knowledge_base.observation_plan %}
+                    <tr><td><strong>{{ item.action }}</strong></td><td>{{ item.goal }}</td><td>{{ item.method }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </section>
 {% endif %}
 

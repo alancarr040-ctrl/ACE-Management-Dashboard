@@ -1,9 +1,9 @@
 {
   "product": "ACE Management Dashboard",
   "short_name": "ACEMD",
-  "version": "3.0.3-dev",
-  "phase": "3 - ACE Discovery Framework",
-  "milestone": "3.0.3 - Foundation Polish",
+  "version": "3.1.1-dev",
+  "phase": "3 - Administration Foundation",
+  "milestone": "3.1.1 - ACE Knowledge Base",
   "status": "Development",
-  "build": "2026.07.09-303"
+  "build": "2026.07.09-311"
 }

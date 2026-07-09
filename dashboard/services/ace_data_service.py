@@ -261,36 +261,175 @@ class ACEDataService:
             inventories.append(entry)
         return {"inventories": inventories}
 
-    def get_accounts(self, search: str = "", limit: int = 50) -> dict[str, Any]:
+
+    def get_ace_knowledge_base(self) -> dict[str, Any]:
+        """Return the initial read-only ACE semantic knowledge base.
+
+        Phase 3.1.1 formalizes the layer between raw discovery rows and
+        administrator-facing screens. These entries are intentionally small and
+        provenance-aware: ACEMD should record what is known, what is inferred,
+        and what still needs observation before any future write module trusts it.
+        """
+        property_entries = [
+            {"domain": "Character", "set": "String", "type": 1, "label": "Name", "semantic_key": "Character.Name", "confidence": "Inferred", "source": "Observed character string rows", "editable": "Future", "notes": "Commonly matches the visible character name."},
+            {"domain": "Character", "set": "String", "type": 3, "label": "Sex", "semantic_key": "Character.Sex", "confidence": "Suspected", "source": "Observed character string rows", "editable": "No", "notes": "Requires confirmation against ACE enums/source."},
+            {"domain": "Character", "set": "String", "type": 4, "label": "Race", "semantic_key": "Character.Race", "confidence": "Suspected", "source": "Observed character string rows", "editable": "No", "notes": "Likely display race/heritage text; confirm with multiple characters."},
+            {"domain": "Character", "set": "String", "type": 5, "label": "Title", "semantic_key": "Character.Title", "confidence": "Suspected", "source": "Observed character string rows", "editable": "No", "notes": "Likely selected title text."},
+            {"domain": "Character", "set": "String", "type": 43, "label": "Born", "semantic_key": "Character.Born", "confidence": "Suspected", "source": "Observed character string rows", "editable": "No", "notes": "Likely character creation/birth display string."},
+        ]
+        observation_plan = [
+            {"action": "Gain XP", "goal": "Identify available XP, total XP, level-related int/int64 rows.", "method": "Snapshot character rows, grant or earn XP, snapshot again, compare changed rows."},
+            {"action": "Spend skill credits", "goal": "Identify skill credit, trained skill, and advancement fields.", "method": "Snapshot before and after a single known skill change."},
+            {"action": "Train or raise an attribute", "goal": "Map attribute tables and validation boundaries.", "method": "Change one attribute only, diff attribute and int rows."},
+            {"action": "Move / recall", "goal": "Confirm position fields and current location semantics.", "method": "Capture position rows before and after controlled movement."},
+            {"action": "Equip item", "goal": "Map equipment/inventory ownership and containment relationships.", "method": "Equip one known item and compare inventory, IID, and position/property rows."},
+        ]
+        confidence_levels = [
+            {"level": "Unknown", "meaning": "Observed but not yet interpreted."},
+            {"level": "Suspected", "meaning": "Human hypothesis from a small number of observations."},
+            {"level": "Inferred", "meaning": "Repeated observations strongly suggest this meaning."},
+            {"level": "Confirmed", "meaning": "Verified by ACE source, reliable documentation, or controlled action tests."},
+        ]
+        summary = {
+            "property_entries": len(property_entries),
+            "observation_tests": len(observation_plan),
+            "write_policy": "Read-only until a property has confirmed meaning, validation, and write rules.",
+            "purpose": "Translate raw ACE rows into safe administrator-facing concepts.",
+        }
+        return {
+            "summary": summary,
+            "property_entries": property_entries,
+            "confidence_levels": confidence_levels,
+            "observation_plan": observation_plan,
+        }
+
+    def get_accounts(
+        self,
+        search: str = "",
+        status: str = "all",
+        access: str = "all",
+        sort: str = "accountName",
+        page: int = 1,
+        per_page: int = 25,
+    ) -> dict[str, Any]:
+        """Return a read-only, administrator-oriented account list.
+
+        Phase 3.1 deliberately presents account management data instead of a raw
+        auth table dump. Password, salt, hash, token, and secret fields are never
+        selected for list or detail views.
+        """
         profile = self._profile("auth")
-        result = {"status": "Unavailable", "rows": [], "error": "", "count": 0}
+        page = max(1, int(page or 1))
+        per_page = min(100, max(10, int(per_page or 25)))
+        result = {
+            "status": "Unavailable",
+            "rows": [],
+            "error": "",
+            "count": 0,
+            "total": 0,
+            "page": page,
+            "per_page": per_page,
+            "pages": 0,
+            "search": search,
+            "filters": {"status": status, "access": access, "sort": sort},
+            "summary": {"total": 0, "clear": 0, "banned": 0, "with_characters": 0, "admin": 0},
+            "access_levels": [],
+        }
         if not self._can_connect(profile):
             result["error"] = "Live ACE auth database connection unavailable."
             return result
         try:
-            where = ""
+            account_columns = self._table_columns(profile, "account")
+            optional_select = ",\n                       ".join([
+                self._optional_column_expr(account_columns, "a", "email_Address"),
+                self._optional_column_expr(account_columns, "a", "create_Time"),
+                self._optional_column_expr(account_columns, "a", "last_Login_Time"),
+                self._optional_column_expr(account_columns, "a", "total_Times_Logged_In", "0"),
+                self._optional_column_expr(account_columns, "a", "banned_Time"),
+                self._optional_column_expr(account_columns, "a", "ban_Expire_Time"),
+                self._optional_column_expr(account_columns, "a", "last_Login_IP"),
+            ])
+            where_parts: list[str] = []
             params: list[Any] = []
             if search:
-                where = "WHERE a.accountName LIKE %s OR CAST(a.accountId AS CHAR) = %s"
+                where_parts.append("(a.accountName LIKE %s OR CAST(a.accountId AS CHAR) = %s)")
                 params.extend([f"%{search}%", search])
+            if status == "banned" and "banned_time" in account_columns:
+                where_parts.append("a.banned_Time IS NOT NULL")
+            elif status == "clear" and "banned_time" in account_columns:
+                where_parts.append("a.banned_Time IS NULL")
+            if access not in ("", "all"):
+                try:
+                    access_level = int(access)
+                    where_parts.append("a.accessLevel = %s")
+                    params.append(access_level)
+                except ValueError:
+                    pass
+            where = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+
+            sort_map = {
+                "accountName": "a.accountName ASC",
+                "accountId": "a.accountId ASC",
+                "accessLevel": "a.accessLevel DESC, a.accountName ASC",
+                "created": "a.create_Time DESC" if "create_time" in account_columns else "a.accountId DESC",
+                "lastLogin": "a.last_Login_Time DESC" if "last_login_time" in account_columns else "a.accountId DESC",
+                "logins": "a.total_Times_Logged_In DESC" if "total_times_logged_in" in account_columns else "a.accountId DESC",
+                "characters": "character_Count DESC, a.accountName ASC",
+            }
+            order_by = sort_map.get(sort, sort_map["accountName"])
             shard_db = self._safe_identifier(self._profile("shard").database)
-            sql = f"""
+            character_count_expr = f"(SELECT COUNT(*) FROM `{shard_db}`.`character` c WHERE c.account_Id = a.accountId AND c.is_Deleted = 0)"
+
+            total_rows = self._select(profile, f"SELECT COUNT(*) AS count_value FROM account a {where}", tuple(params))
+            total = int(total_rows[0].get("count_value") or 0) if total_rows else 0
+            offset = (page - 1) * per_page
+            rows = self._select(profile, f"""
                 SELECT a.accountId, a.accountName, a.accessLevel, al.name AS accessLevelName,
-                       a.email_Address, a.create_Time, a.last_Login_Time,
-                       a.total_Times_Logged_In, a.banned_Time, a.ban_Expire_Time,
-                       (SELECT COUNT(*) FROM `{shard_db}`.`character` c WHERE c.account_Id = a.accountId AND c.is_Deleted = 0) AS character_Count
+                       {optional_select},
+                       {character_count_expr} AS character_Count
                 FROM account a
                 LEFT JOIN accesslevel al ON al.level = a.accessLevel
                 {where}
-                ORDER BY a.accountId ASC
-                LIMIT %s
-            """
-            params.append(limit)
-            rows = self._select(profile, sql, tuple(params))
-            result.update({"status": "Connected", "rows": rows, "count": len(rows)})
+                ORDER BY {order_by}
+                LIMIT %s OFFSET %s
+            """, tuple(params + [per_page, offset]))
+            summary = self._account_summary(profile, shard_db, account_columns)
+            access_levels = self._select(profile, "SELECT level, name FROM accesslevel ORDER BY level ASC", ()) if self._table_exists(profile, "accesslevel") else []
+            result.update({
+                "status": "Connected",
+                "rows": [self._account_admin_row(row) for row in rows],
+                "count": len(rows),
+                "total": total,
+                "pages": (total + per_page - 1) // per_page if total else 0,
+                "summary": summary,
+                "access_levels": access_levels,
+            })
         except Exception as exc:
             result["error"] = self._safe_error(exc)
         return result
+
+    def _account_summary(self, profile: ACEDatabaseProfile, shard_db: str, account_columns: set[str]) -> dict[str, int]:
+        total = self._count_query(profile, "SELECT COUNT(*) AS count_value FROM account", ())
+        banned = 0
+        if "banned_time" in account_columns:
+            banned = self._count_query(profile, "SELECT COUNT(*) AS count_value FROM account WHERE banned_Time IS NOT NULL", ())
+        with_chars = self._count_query(profile, f"""
+            SELECT COUNT(*) AS count_value
+            FROM account a
+            WHERE EXISTS (SELECT 1 FROM `{shard_db}`.`character` c WHERE c.account_Id = a.accountId AND c.is_Deleted = 0)
+        """, ())
+        admin = self._count_query(profile, "SELECT COUNT(*) AS count_value FROM account WHERE accessLevel > 0", ())
+        return {"total": total, "clear": max(0, total - banned), "banned": banned, "with_characters": with_chars, "admin": admin}
+
+    def _account_admin_row(self, row: dict[str, Any]) -> dict[str, Any]:
+        clean = self._redact_sensitive_row(dict(row))
+        clean["ban_Status"] = "Banned" if clean.get("banned_Time") else "Clear"
+        clean["login_Summary"] = clean.get("last_Login_Time") or clean.get("last_Login_IP") or "No login recorded"
+        return clean
+
+    def _count_query(self, profile: ACEDatabaseProfile, sql: str, params: tuple[Any, ...]) -> int:
+        rows = self._select(profile, sql, params)
+        return int(rows[0].get("count_value") or 0) if rows else 0
 
     def get_characters(self, search: str = "", limit: int = 50) -> dict[str, Any]:
         profile = self._profile("shard")

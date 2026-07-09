@@ -24,8 +24,13 @@ def servers_page():
 def accounts_page():
     ctx = _ctx("accounts")
     search = request.args.get("q", "", type=str).strip()
+    status = request.args.get("status", "all", type=str).strip() or "all"
+    access = request.args.get("access", "all", type=str).strip() or "all"
+    sort = request.args.get("sort", "accountName", type=str).strip() or "accountName"
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 25, type=int)
     ctx["search_query"] = search
-    ctx["account_data"] = ace_data_service.get_accounts(search=search)
+    ctx["account_data"] = ace_data_service.get_accounts(search=search, status=status, access=access, sort=sort, page=page, per_page=per_page)
     return render_template("index.html", **ctx)
 
 
@@ -42,6 +47,13 @@ def characters_page():
 def world_page():
     ctx = _ctx("world")
     ctx["world_data"] = ace_data_service.get_world_summary()
+    return render_template("index.html", **ctx)
+
+
+@administration_bp.route("/administration/knowledge")
+def knowledge_page():
+    ctx = _ctx("knowledge")
+    ctx["knowledge_base"] = ace_data_service.get_ace_knowledge_base()
     return render_template("index.html", **ctx)
 
 

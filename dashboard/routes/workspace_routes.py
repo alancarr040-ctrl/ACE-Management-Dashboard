@@ -40,9 +40,21 @@ def administration_servers_page():
 @workspace_bp.route('/administration/accounts')
 def administration_accounts_page():
     search_query = request.args.get('q', '').strip()
+    status = request.args.get('status', 'all').strip() or 'all'
+    access = request.args.get('access', 'all').strip() or 'all'
+    sort = request.args.get('sort', 'accountName').strip() or 'accountName'
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 25, type=int)
     ctx = _workspace_context('accounts')
     ctx['search_query'] = search_query
-    ctx['account_data'] = ace_data_service.get_accounts(search_query)
+    ctx['account_data'] = ace_data_service.get_accounts(
+        search=search_query,
+        status=status,
+        access=access,
+        sort=sort,
+        page=page,
+        per_page=per_page,
+    )
     return render_template('index.html', **ctx)
 
 
