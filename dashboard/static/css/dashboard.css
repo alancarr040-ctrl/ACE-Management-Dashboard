@@ -66,3 +66,6 @@
     z-index: 3;
     background: #1b1b1b;
 }
+
+/* ACEMD 3.0.2 relationship explorer */
+.relationship-chain{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:10px}.relationship-node{display:block;min-width:180px;border:1px solid #555;border-radius:6px;background:#202020;padding:10px 12px;text-decoration:none}.relationship-node:hover{border-color:#777;background:#282828}.relationship-node span{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}.relationship-node strong{display:block;color:var(--text);overflow-wrap:anywhere}.relationship-arrow{display:flex;align-items:center;color:var(--muted);font-size:20px;font-weight:bold}@media(max-width:900px){.relationship-chain{display:block}.relationship-node{margin-bottom:8px}.relationship-arrow{display:none}}

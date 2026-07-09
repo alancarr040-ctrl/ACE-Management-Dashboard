@@ -69,6 +69,20 @@ def administration_character_detail_page(character_id: int):
     return render_template('index.html', **ctx)
 
 
+@workspace_bp.route('/administration/relationships')
+def administration_relationships_page():
+    ctx = _workspace_context('relationships')
+    ctx['relationship_data'] = ace_data_service.get_relationship_overview()
+    return render_template('index.html', **ctx)
+
+
+@workspace_bp.route('/administration/relationships/characters/<int:character_id>')
+def administration_character_relationships_page(character_id: int):
+    ctx = _workspace_context('character_relationships')
+    ctx['character_relationships'] = ace_data_service.get_character_relationships(character_id)
+    return render_template('index.html', **ctx)
+
+
 @workspace_bp.route('/administration/world')
 def administration_world_page():
     ctx = _workspace_context('world')

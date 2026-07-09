@@ -317,6 +317,7 @@
             <div class="property-row compact"><div class="property-label">Deleted</div><div class="property-value">{% if character_detail.character.is_Deleted %}<span class="yellow">Yes</span>{% else %}<span class="green">No</span>{% endif %}</div></div>
             <div class="property-row compact"><div class="property-label">Total Logins</div><div class="property-value">{{ character_detail.character.total_Logins }}</div></div>
             <div class="property-row compact"><div class="property-label">Last Login Timestamp</div><div class="property-value">{{ character_detail.character.last_Login_Timestamp }}</div></div>
+            <div class="actions"><a class="button" href="/administration/relationships/characters/{{ character_detail.character.id }}#character-relationships">View Relationships</a></div>
         </div>
         <div class="card">
             <h3>Property Sets</h3>
@@ -339,6 +340,129 @@
         {% else %}
         <p class="muted">No sampled rows.</p>
         {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card"><p class="muted">Character was not found.</p></div>
+    {% endif %}
+</section>
+{% endif %}
+
+
+{% if active_tab == 'relationships' %}
+<section id="relationships">
+    <div class="card health-hero ok">
+        <div><h2>ACE Relationships</h2><p>Read-only relationship map for accounts, characters, biota, property tables, and world templates.</p><p class="muted">This page documents how ACEMD currently understands ACE data relationships before write-capable administration exists.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+
+    <div class="grid-4">
+        <div class="card compact-card"><h3>Accounts</h3><div class="metric-value">{{ relationship_data.summary.accounts if relationship_data.summary.accounts is not none else '—' }}</div><span class="muted">ace_auth.account</span></div>
+        <div class="card compact-card"><h3>Characters</h3><div class="metric-value">{{ relationship_data.summary.characters if relationship_data.summary.characters is not none else '—' }}</div><span class="muted">ace_shard.character</span></div>
+        <div class="card compact-card"><h3>Biota</h3><div class="metric-value">{{ relationship_data.summary.biota if relationship_data.summary.biota is not none else '—' }}</div><span class="muted">ace_shard.biota</span></div>
+        <div class="card compact-card"><h3>World Templates</h3><div class="metric-value">{{ relationship_data.summary.world_weenies if relationship_data.summary.world_weenies is not none else '—' }}</div><span class="muted">ace_world.weenie</span></div>
+    </div>
+
+    {% if relationship_data.errors %}
+    <div class="card">{% for err in relationship_data.errors %}<p class="yellow">{{ err }}</p>{% endfor %}</div>
+    {% endif %}
+
+    <div class="card">
+        <h3>Documented Relationship Map</h3>
+        <table class="data-table compact-table">
+            <thead><tr><th>Relationship</th><th>From</th><th>To</th><th>Meaning</th><th>Confidence</th></tr></thead>
+            <tbody>
+            {% for rel in relationship_data.relationships %}
+                <tr><td><strong>{{ rel.name }}</strong></td><td><code>{{ rel.from }}</code></td><td><code>{{ rel.to }}</code></td><td>{{ rel.meaning }}</td><td>{{ rel.confidence }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Character Relationship Entry Points</h3>
+        {% if relationship_data.recent_characters %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Character</th><th>Account</th><th>WCID</th><th>Biota</th><th>Relationship View</th></tr></thead>
+            <tbody>
+            {% for row in relationship_data.recent_characters %}
+                <tr>
+                    <td><strong>{{ row.name }}</strong><br><span class="muted">{{ row.id }}</span></td>
+                    <td>{{ row.account_Id }}{% if row.accountName %}<br><span class="muted">{{ row.accountName }}</span>{% endif %}</td>
+                    <td>{{ row.weenie_Class_Id or '—' }}</td>
+                    <td>{% if row.weenie_Type %}<span class="green">Linked</span>{% else %}<span class="yellow">Unknown</span>{% endif %}</td>
+                    <td><a class="button" href="/administration/relationships/characters/{{ row.id }}#character-relationships">Open</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No character rows are available yet. Create a character in ACE to validate character relationships.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'character_relationships' %}
+<section id="character-relationships">
+    <div class="card health-hero ok">
+        <div><h2>Character Relationships</h2><p>Read-only relationship-aware view of one ACE character object.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    {% if character_relationships.error %}<div class="card"><p class="yellow">{{ character_relationships.error }}</p></div>{% endif %}
+    {% if character_relationships.character %}
+    <div class="card">
+        <div class="card-title-line"><h3>{{ character_relationships.character.name }}</h3><a class="button" href="/administration/characters/{{ character_relationships.character.id }}#character-detail">Raw Character Detail</a></div>
+        <div class="relationship-chain">
+        {% for step in character_relationships.relationship_steps %}
+            <a class="relationship-node" href="{{ step.target }}"><span>{{ step.label }}</span><strong>{{ step.value }}</strong></a>
+            {% if not loop.last %}<div class="relationship-arrow">→</div>{% endif %}
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="card compact-card"><h3>Account</h3><div class="metric-value">{{ character_relationships.character.accountName or character_relationships.character.account_Id }}</div><span class="muted">Owner relationship</span></div>
+        <div class="card compact-card"><h3>Character / Biota ID</h3><div class="metric-value">{{ character_relationships.character.id }}</div><span class="muted">character.id = biota.id</span></div>
+        <div class="card compact-card"><h3>WCID</h3><div class="metric-value">{{ character_relationships.character.weenie_Class_Id or '—' }}</div><span class="muted">World template class id</span></div>
+    </div>
+
+    <div class="card" id="property-relationships">
+        <h3>Property Table Relationships</h3>
+        <p class="muted">Counts are live read-only counts by <code>object_Id</code>. Empty groups are still useful because they document where ACE may store that data type.</p>
+        <table class="data-table compact-table">
+            <thead><tr><th>Property Group</th><th>Table</th><th>Rows</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for prop in character_relationships.property_counts %}
+                <tr><td><strong>{{ prop.label }}</strong></td><td><a href="/administration/database/shard/{{ prop.table }}#table-detail"><code>{{ prop.table }}</code></a></td><td>{{ prop.rows }}</td><td>{% if prop.rows %}<span class="green">Populated</span>{% else %}<span class="gray">Empty</span>{% endif %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if character_relationships.world_template %}
+    <div class="card">
+        <h3>World Template Match</h3>
+        <div class="table-scroll sample-table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr>{% for key in character_relationships.world_template.keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+                <tbody><tr>{% for value in character_relationships.world_template.values() %}<td>{{ value }}</td>{% endfor %}</tr></tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% for label, rows in [('Location', character_relationships.location), ('Attributes', character_relationships.attributes), ('Vitals', character_relationships.vitals), ('Skills', character_relationships.skills)] %}
+    <div class="card">
+        <h3>{{ label }}</h3>
+        {% if rows %}
+        <div class="table-scroll sample-table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr>{% for key in rows[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+                <tbody>{% for row in rows %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}<p class="muted">No rows found for this relationship group.</p>{% endif %}
     </div>
     {% endfor %}
     {% else %}

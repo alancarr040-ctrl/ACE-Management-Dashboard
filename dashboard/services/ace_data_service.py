@@ -405,7 +405,7 @@ class ACEDataService:
                 ):
                     if self._table_exists(profile, table):
                         try:
-                            rows = self._select(profile, f"SELECT * FROM `{table}` WHERE object_Id = %s ORDER BY `type` ASC LIMIT 25", (character_id,))
+                            rows = self._select_object_rows(profile, table, int(character_id), 25)
                             result["properties"][key] = rows
                         except Exception:
                             result["properties"][key] = []
@@ -467,6 +467,146 @@ class ACEDataService:
             result["sample"] = [self._redact_sensitive_row(row) for row in sample_rows]
         except Exception as exc:
             result["error"] = self._safe_error(exc)
+        return result
+
+
+    def get_relationship_overview(self) -> dict[str, Any]:
+        """Return documented and live ACE relationship discovery, read-only."""
+        result: dict[str, Any] = {
+            "status": "Read-only",
+            "summary": {"accounts": None, "characters": None, "biota": None, "world_weenies": None},
+            "relationships": [],
+            "recent_characters": [],
+            "errors": [],
+        }
+        auth = self._profile("auth")
+        shard = self._profile("shard")
+        world = self._profile("world")
+        relationship_defs = [
+            {
+                "name": "Account ownership",
+                "from": "ace_auth.account.accountId",
+                "to": "ace_shard.character.account_Id",
+                "meaning": "An ACE auth account owns zero or more shard characters.",
+                "confidence": "Validated when both account and character tables are reachable.",
+            },
+            {
+                "name": "Character object",
+                "from": "ace_shard.character.id",
+                "to": "ace_shard.biota.id",
+                "meaning": "A player character has a matching biota row that stores runtime object metadata.",
+                "confidence": "Validated when character rows join to biota rows.",
+            },
+            {
+                "name": "Biota properties",
+                "from": "ace_shard.biota.id",
+                "to": "ace_shard.biota_properties_*.object_Id",
+                "meaning": "Character/object state is spread across typed property tables keyed by object_Id.",
+                "confidence": "Schema-derived; property row counts are sampled per character.",
+            },
+            {
+                "name": "World template linkage",
+                "from": "ace_shard.biota.weenie_Class_Id",
+                "to": "ace_world.weenie.class_Id",
+                "meaning": "Runtime objects can reference static world templates by WCID/class id.",
+                "confidence": "Validated when matching world weenie rows are found.",
+            },
+        ]
+        result["relationships"] = relationship_defs
+        try:
+            if self._can_connect(auth) and self._table_exists(auth, "account"):
+                rows = self._select(auth, "SELECT COUNT(*) AS count_value FROM account", ())
+                result["summary"]["accounts"] = int(rows[0].get("count_value") or 0) if rows else 0
+        except Exception as exc:
+            result["errors"].append(f"Auth relationship summary unavailable: {self._safe_error(exc)}")
+        try:
+            if self._can_connect(shard):
+                if self._table_exists(shard, "character"):
+                    rows = self._select(shard, "SELECT COUNT(*) AS count_value FROM `character`", ())
+                    result["summary"]["characters"] = int(rows[0].get("count_value") or 0) if rows else 0
+                if self._table_exists(shard, "biota"):
+                    rows = self._select(shard, "SELECT COUNT(*) AS count_value FROM biota", ())
+                    result["summary"]["biota"] = int(rows[0].get("count_value") or 0) if rows else 0
+                result["recent_characters"] = self.get_characters(limit=10).get("rows", [])
+        except Exception as exc:
+            result["errors"].append(f"Shard relationship summary unavailable: {self._safe_error(exc)}")
+        try:
+            if self._can_connect(world) and self._table_exists(world, "weenie"):
+                rows = self._select(world, "SELECT COUNT(*) AS count_value FROM weenie", ())
+                result["summary"]["world_weenies"] = int(rows[0].get("count_value") or 0) if rows else 0
+        except Exception as exc:
+            result["errors"].append(f"World relationship summary unavailable: {self._safe_error(exc)}")
+        return result
+
+    def get_character_relationships(self, character_id: int) -> dict[str, Any]:
+        """Return a relationship-aware read-only view of a character object."""
+        detail = self.get_character_detail(character_id)
+        result: dict[str, Any] = {
+            "status": detail.get("status", "Unavailable"),
+            "character": detail.get("character"),
+            "property_counts": [],
+            "relationship_steps": [],
+            "world_template": None,
+            "location": [],
+            "skills": [],
+            "attributes": [],
+            "vitals": [],
+            "error": detail.get("error", ""),
+        }
+        if not result["character"]:
+            return result
+        shard = self._profile("shard")
+        world = self._profile("world")
+        cid = int(character_id)
+        property_tables = (
+            ("Ints", "biota_properties_int"),
+            ("Strings", "biota_properties_string"),
+            ("Floats", "biota_properties_float"),
+            ("Bools", "biota_properties_bool"),
+            ("DIDs", "biota_properties_d_i_d"),
+            ("IIDs", "biota_properties_i_i_d"),
+            ("Int64", "biota_properties_int64"),
+            ("Attributes", "biota_properties_attribute"),
+            ("Vitals / 2nd Attributes", "biota_properties_attribute_2nd"),
+            ("Skills", "biota_properties_skill"),
+            ("Positions", "biota_properties_position"),
+            ("Spell Book", "biota_properties_spell_book"),
+            ("Create List", "biota_properties_create_list"),
+            ("Palette", "biota_properties_palette"),
+            ("Texture Map", "biota_properties_texture_map"),
+            ("Anim Part", "biota_properties_anim_part"),
+        )
+        try:
+            if self._can_connect(shard):
+                for label, table in property_tables:
+                    if self._table_exists(shard, table):
+                        rows = self._select(shard, f"SELECT COUNT(*) AS count_value FROM `{table}` WHERE object_Id = %s", (cid,))
+                        count = int(rows[0].get("count_value") or 0) if rows else 0
+                        result["property_counts"].append({"label": label, "table": table, "rows": count})
+                if self._table_exists(shard, "biota_properties_position"):
+                    result["location"] = self._select_object_rows(shard, "biota_properties_position", cid, 10)
+                if self._table_exists(shard, "biota_properties_skill"):
+                    result["skills"] = self._select_object_rows(shard, "biota_properties_skill", cid, 25)
+                if self._table_exists(shard, "biota_properties_attribute"):
+                    result["attributes"] = self._select_object_rows(shard, "biota_properties_attribute", cid, 25)
+                if self._table_exists(shard, "biota_properties_attribute_2nd"):
+                    result["vitals"] = self._select_object_rows(shard, "biota_properties_attribute_2nd", cid, 25)
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        try:
+            wcid = result["character"].get("weenie_Class_Id")
+            if wcid and self._can_connect(world) and self._table_exists(world, "weenie"):
+                rows = self._select(world, "SELECT * FROM weenie WHERE class_Id = %s LIMIT 1", (wcid,))
+                result["world_template"] = self._redact_sensitive_row(rows[0]) if rows else None
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        result["relationship_steps"] = [
+            {"label": "Account", "value": f"{result['character'].get('account_Id')} · {result['character'].get('accountName') or 'Unknown'}", "target": f"/administration/accounts/{result['character'].get('account_Id')}#account-detail"},
+            {"label": "Character", "value": f"{result['character'].get('id')} · {result['character'].get('name')}", "target": f"/administration/characters/{result['character'].get('id')}#character-detail"},
+            {"label": "Biota", "value": f"biota.id = {result['character'].get('id')}", "target": "/administration/database/shard/biota#table-detail"},
+            {"label": "Property Tables", "value": f"{sum(1 for p in result['property_counts'] if p['rows'])} populated property groups", "target": "#property-relationships"},
+            {"label": "World Template", "value": f"weenie.class_Id = {result['character'].get('weenie_Class_Id') or '—'}", "target": f"/administration/database/world/weenie#table-detail"},
+        ]
         return result
 
     def get_world_summary(self) -> dict[str, Any]:
@@ -556,6 +696,45 @@ class ACEDataService:
         if column.lower() in available_columns:
             return f"{alias}.`{column}` AS `{column}`"
         return f"{default} AS `{column}`"
+
+
+    def _order_clause_for_table(self, profile: ACEDatabaseProfile, table: str, preferred: tuple[str, ...] | None = None) -> str:
+        """Return a schema-aware ORDER BY clause for ACE tables.
+
+        ACE property tables are not uniform: many use `type`, some use `key`,
+        and others only have `id`/`object_Id` or table-specific fields. Keeping
+        ordering logic here prevents explorers from assuming one table shape.
+        """
+        preferred = preferred or (
+            "type", "key", "id", "object_Id", "spell", "destination_Type",
+            "emote_Id", "position_Type", "palette", "seq", "weenie_Class_Id", "class_Id",
+        )
+        table = self._safe_identifier(table)
+        try:
+            rows = self._select(profile, """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = %s AND table_name = %s
+                ORDER BY ordinal_position
+            """, (profile.database, table))
+        except Exception:
+            return ""
+        columns = [str(self._row_value(row, "column_name", "COLUMN_NAME", default="")) for row in rows]
+        lower_to_real = {col.lower(): col for col in columns if col}
+        order_columns: list[str] = []
+        for candidate in preferred:
+            real = lower_to_real.get(candidate.lower())
+            if real and real not in order_columns:
+                order_columns.append(real)
+        if not order_columns:
+            return ""
+        return " ORDER BY " + ", ".join(f"`{col}` ASC" for col in order_columns[:3])
+
+    def _select_object_rows(self, profile: ACEDatabaseProfile, table: str, object_id: int, limit: int = 25) -> list[dict[str, Any]]:
+        """Select rows keyed by object_Id with schema-aware ordering."""
+        table = self._safe_identifier(table)
+        order_clause = self._order_clause_for_table(profile, table)
+        return self._select(profile, f"SELECT * FROM `{table}` WHERE object_Id = %s{order_clause} LIMIT {int(limit)}", (object_id,))
 
     def _table_exists(self, profile: ACEDatabaseProfile, table: str) -> bool:
         rows = self._select(profile, """

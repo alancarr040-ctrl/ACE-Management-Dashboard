@@ -65,6 +65,7 @@ class WorkspaceService:
                 WorkspaceItem("accounts", "Accounts", "/administration/accounts#accounts", "Read-only account explorer."),
                 WorkspaceItem("characters", "Characters", "/administration/characters#characters", "Read-only character explorer."),
                 WorkspaceItem("world", "World", "/administration/world#world", "Read-only world data explorer."),
+                WorkspaceItem("relationships", "Relationships", "/administration/relationships#relationships", "Read-only ACE relationship explorer."),
                 WorkspaceItem("database", "Database", "/administration/database#database", "Schema and table explorer."),
                 WorkspaceItem("configuration", "Configuration", "/administration#administration", "Planned platform configuration module.", "Planned"),
             ),
@@ -90,7 +91,7 @@ class WorkspaceService:
         for workspace in WORKSPACES
         for item in workspace.items
     }
-    MODULE_TO_WORKSPACE.update({"account_detail": "administration", "character_detail": "administration"})
+    MODULE_TO_WORKSPACE.update({"account_detail": "administration", "character_detail": "administration", "character_relationships": "administration"})
 
     def get_navigation(self, active_tab: str) -> dict:
         active_workspace = self.get_workspace_for_tab(active_tab)
