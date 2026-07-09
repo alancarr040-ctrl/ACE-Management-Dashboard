@@ -22,7 +22,8 @@ Future packages must update this document when architecture, phase order, subsys
 | 2.6.0 | Operational Monitoring & Events | Complete |
 | 2.6.1 | Roadmap & Vision | Complete |
 | 2.7.0 | Scheduler & Automation | Complete |
-| 2.7.1 | Repository & Documentation Reorganization | Current |
+| 2.7.1 | Repository & Documentation Reorganization | Complete |
+| 2.7.2 | Automation Framework & UI Polish | Current Development |
 | 2.8.0 | Metrics & Resource Monitoring | Planned |
 | 2.9.0 | Notifications & Alerts | Planned |
 | 3.0.0 | ACE Data Integration Foundation | Planned |
@@ -43,6 +44,7 @@ The 2.x track builds the operational foundation for ACEMD.
 - Health monitoring.
 - Event history.
 - Scheduler and automation.
+- Shared UI helpers.
 - Metrics.
 - Notifications.
 
@@ -75,5 +77,7 @@ The 4.x track is reserved for advanced features after the platform and administr
 - Management actions flow through certified wrapper/service layers.
 - Events are a shared service, not only a page.
 - Automation jobs should publish events.
+- Automation jobs should register through the shared registry instead of being hard-coded in the scheduler loop.
+- Operator-facing timestamps should use relative time first with muted absolute timestamps retained for auditability.
 - Future account and character tools must use shared health, event, and safety services instead of duplicating platform logic.
 - Documentation must be updated whenever the roadmap or architecture changes.

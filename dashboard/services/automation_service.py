@@ -4,16 +4,20 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+
+from services.automation_jobs import AutomationJob, AutomationJobRegistry
+from utils.time_format import time_display
+from utils.status import severity_badge_class
 
 
 class AutomationService:
     """Request-driven ACEMD automation scheduler.
 
-    Phase 2.7.0 intentionally avoids introducing a daemon, cron editor, or write-capable
-    automation.  The dashboard performs a safe scheduler tick whenever the Automation
-    page or API is read.  Jobs are read-only checks that can publish events, update job
-    history, and establish the scheduling model future phases will expand.
+    Phase 2.7.2 introduces a small job registry so built-in jobs are registered as
+    scheduler objects instead of being embedded directly in the scheduler loop.  The
+    engine remains request-driven and read-only; it does not create cron entries or a
+    host daemon.
     """
 
     def __init__(self, health_service, backup_service, system_service, management_service, event_service, root_path: str | Path | None = None):
@@ -26,7 +30,12 @@ class AutomationService:
         runtime_dir = Path(os.environ.get("ACE_RUNTIME_DIR", self.root_path / "backups" / "runtime"))
         self.state_path = Path(os.environ.get("ACEMD_AUTOMATION_STATE", runtime_dir / "automation-state.json"))
         self.max_history = int(os.environ.get("ACEMD_AUTOMATION_HISTORY_MAX", "100"))
-        self.jobs = self._default_jobs()
+        self.registry = AutomationJobRegistry()
+        self._register_builtin_jobs()
+
+    @property
+    def jobs(self) -> list[AutomationJob]:
+        return self.registry.all()
 
     def get_status(self, run_due: bool = True) -> dict[str, Any]:
         if run_due:
@@ -35,25 +44,31 @@ class AutomationService:
         jobs = [self._job_view(job, state) for job in self.jobs]
         enabled = sum(1 for j in jobs if j["enabled"])
         disabled = len(jobs) - enabled
-        last_runs = [j for j in jobs if j.get("last_run")]
-        last_run = max((j["last_run"] for j in last_runs), default="Never")
-        next_due_candidates = [j["next_run"] for j in jobs if j.get("enabled") and j.get("next_run")]
-        next_run = min(next_due_candidates) if next_due_candidates else "None"
+        last_runs = [j for j in jobs if j.get("last_run_raw")]
+        last_run_raw = max((j["last_run_raw"] for j in last_runs), default=None)
+        next_due_candidates = [j["next_run_raw"] for j in jobs if j.get("enabled") and j.get("next_run_raw")]
+        next_run_raw = min(next_due_candidates) if next_due_candidates else None
         failures = sum(1 for j in jobs if j.get("last_result_level") in ("warning", "critical"))
+        history = [self._history_view(row) for row in list(reversed(state.get("history", [])[-self.max_history:]))]
         return {
             "engine": {
                 "status": "Running",
                 "mode": "Request-driven",
+                "registry": "Built-in registry",
                 "jobs": len(jobs),
                 "enabled": enabled,
                 "disabled": disabled,
                 "last_tick": state.get("last_tick", "Never"),
-                "last_run": last_run,
-                "next_run": next_run,
+                "last_tick_display": time_display(state.get("last_tick")),
+                "last_run": last_run_raw or "Never",
+                "last_run_display": time_display(last_run_raw),
+                "next_run": next_run_raw or "None",
+                "next_run_display": time_display(next_run_raw, future=True),
                 "failures": failures,
+                "groups": len(self.registry.groups()),
             },
             "jobs": jobs,
-            "history": list(reversed(state.get("history", [])[-self.max_history:])),
+            "history": history,
         }
 
     def run_due_jobs(self) -> list[dict[str, Any]]:
@@ -62,17 +77,17 @@ class AutomationService:
         state["last_tick"] = self._format_time(now)
         results = []
         for job in self.jobs:
-            if not job.get("enabled", True):
+            if not job.enabled:
                 continue
-            current = state.setdefault("jobs", {}).setdefault(job["id"], {})
+            current = state.setdefault("jobs", {}).setdefault(job.id, {})
             next_run = self._parse_time(current.get("next_run"))
             if next_run is None or now >= next_run:
-                results.append(self.run_job(job["id"], state=state, manual=False))
+                results.append(self.run_job(job.id, state=state, manual=False))
         self._write_state(state)
         return results
 
     def run_job(self, job_id: str, state: dict[str, Any] | None = None, manual: bool = True) -> dict[str, Any]:
-        job = next((j for j in self.jobs if j["id"] == job_id), None)
+        job = self.registry.get(job_id)
         if not job:
             return {"job_id": job_id, "success": False, "level": "critical", "message": "Unknown job."}
         own_state = state is None
@@ -81,16 +96,16 @@ class AutomationService:
         now = self._now()
         job_state = state.setdefault("jobs", {}).setdefault(job_id, {})
         try:
-            result = job["runner"]()
+            result = job.runner()
             success = result.get("level") not in ("critical", "warning")
         except Exception as exc:
             result = {"level": "critical", "status": "Failed", "detail": str(exc)}
             success = False
-        next_run = now + timedelta(seconds=int(job["interval_seconds"]))
+        next_run = now + timedelta(seconds=int(job.interval_seconds))
         history_row = {
             "timestamp": self._format_time(now),
             "job_id": job_id,
-            "job_name": job["name"],
+            "job_name": job.name,
             "manual": manual,
             "success": success,
             "level": result.get("level", "info"),
@@ -106,48 +121,55 @@ class AutomationService:
         })
         state.setdefault("history", []).append(history_row)
         state["history"] = state["history"][-self.max_history:]
-        self.event_service.record_event(
-            source="automation",
-            event_type="automation_job_completed",
-            severity="warning" if history_row["level"] == "warning" else "critical" if history_row["level"] == "critical" else "info",
-            title=f"Automation job {'manual run' if manual else 'completed'}",
-            message=f"{job['name']}: {history_row['status']}. {history_row['detail']}",
-            entity=job["name"],
-            current=history_row["status"],
-            metadata={"job_id": job_id, "manual": manual},
-        )
+        if job.produces_events:
+            self.event_service.record_event(
+                source="automation",
+                event_type="automation_job_completed",
+                severity="warning" if history_row["level"] == "warning" else "critical" if history_row["level"] == "critical" else "info",
+                title=f"Automation job {'manual run' if manual else 'completed'}",
+                message=f"{job.name}: {history_row['status']}. {history_row['detail']}",
+                entity=job.name,
+                current=history_row["status"],
+                metadata={"job_id": job_id, "manual": manual, "group": job.group, "category": job.category},
+            )
         if own_state:
             state["last_tick"] = self._format_time(now)
             self._write_state(state)
-        return history_row
+        return self._history_view(history_row)
 
-    def _default_jobs(self) -> list[dict[str, Any]]:
-        return [
-            self._job("health_monitor", "Health Monitor", "Core", "Every 30 seconds", 30, "Runs the read-only ACEMD health aggregation and records health transitions.", self._run_health_monitor),
-            self._job("backup_verification", "Backup Verification", "Backups", "Hourly", 3600, "Verifies that ACEMD can see current backup inventory and backup status.", self._run_backup_verification),
-            self._job("disk_usage_check", "Disk Usage Check", "System", "Every 5 minutes", 300, "Checks project filesystem usage against operational thresholds.", self._run_disk_check),
-            self._job("wrapper_validation", "Wrapper Validation", "Management", "Every 5 minutes", 300, "Verifies that the management wrapper is installed and executable.", self._run_wrapper_validation),
-            self._job("event_journal_check", "Event Journal Check", "Events", "Hourly", 3600, "Verifies that the operational event journal is readable and retaining events.", self._run_event_journal_check),
-        ]
+    def _register_builtin_jobs(self) -> None:
+        self.registry.register(AutomationJob("health_monitor", "Health Monitor", "Core", "Every 30 seconds", 30, "Runs the read-only ACEMD health aggregation and records health transitions.", self._run_health_monitor, category="Health", dependencies=("health_service", "event_service")))
+        self.registry.register(AutomationJob("backup_verification", "Backup Verification", "Backups", "Hourly", 3600, "Verifies that ACEMD can see current backup inventory and backup status.", self._run_backup_verification, category="Backups", dependencies=("backup_service",)))
+        self.registry.register(AutomationJob("disk_usage_check", "Disk Usage Check", "System", "Every 5 minutes", 300, "Checks project filesystem usage against operational thresholds.", self._run_disk_check, category="System", dependencies=("system_service",)))
+        self.registry.register(AutomationJob("wrapper_validation", "Wrapper Validation", "Management", "Every 5 minutes", 300, "Verifies that the management wrapper is installed and executable.", self._run_wrapper_validation, category="Management", dependencies=("management_service",)))
+        self.registry.register(AutomationJob("event_journal_check", "Event Journal Check", "Events", "Hourly", 3600, "Verifies that the operational event journal is readable and retaining events.", self._run_event_journal_check, category="Events", dependencies=("event_service",)))
 
-    def _job(self, job_id: str, name: str, group: str, schedule: str, interval_seconds: int, description: str, runner: Callable[[], dict[str, Any]]):
-        return {"id": job_id, "name": name, "group": group, "schedule": schedule, "interval_seconds": interval_seconds, "description": description, "enabled": True, "runner": runner}
-
-    def _job_view(self, job: dict[str, Any], state: dict[str, Any]) -> dict[str, Any]:
-        row = state.get("jobs", {}).get(job["id"], {})
-        return {
-            "id": job["id"],
-            "name": job["name"],
-            "group": job["group"],
-            "schedule": job["schedule"],
-            "description": job["description"],
-            "enabled": job.get("enabled", True),
-            "last_run": row.get("last_run", "Never"),
-            "next_run": row.get("next_run", "Pending"),
+    def _job_view(self, job: AutomationJob, state: dict[str, Any]) -> dict[str, Any]:
+        row = state.get("jobs", {}).get(job.id, {})
+        last_run = row.get("last_run")
+        next_run = row.get("next_run")
+        view = job.as_dict()
+        view.update({
+            "last_run": last_run or "Never",
+            "next_run": next_run or "Pending",
+            "last_run_raw": last_run,
+            "next_run_raw": next_run,
+            "last_run_display": time_display(last_run),
+            "next_run_display": time_display(next_run, future=True),
             "last_result": row.get("last_result", "Not run"),
             "last_result_level": row.get("last_result_level", "unknown"),
+            "last_result_badge": severity_badge_class(row.get("last_result_level")),
             "last_detail": row.get("last_detail", ""),
-        }
+            "dependency_label": ", ".join(job.dependencies) if job.dependencies else "None",
+        })
+        return view
+
+    def _history_view(self, row: dict[str, Any]) -> dict[str, Any]:
+        ts = row.get("timestamp")
+        out = dict(row)
+        out["timestamp_display"] = time_display(ts)
+        out["level_badge"] = severity_badge_class(row.get("level"))
+        return out
 
     def _run_health_monitor(self) -> dict[str, Any]:
         health = self.health_service.get_health()

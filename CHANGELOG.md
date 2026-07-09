@@ -2,6 +2,17 @@
 
 This changelog summarizes certified project milestones. Detailed release notes remain available in the per-package release documentation under `docs/Releases/`.
 
+
+## 2.7.2 - Automation Framework & UI Polish
+
+- Added automation job metadata objects and a registry foundation.
+- Moved built-in automation jobs behind the registry.
+- Added shared relative/future time formatting helpers.
+- Added shared severity badge helper.
+- Updated Automation to show relative Last Run and Next Run values with muted UTC timestamps.
+- Updated Events to show relative time first with muted UTC timestamps.
+- Updated project metadata to 2.7.2.
+
 ## 2.7.1 - Repository & Documentation Reorganization
 
 Documentation-structure release.

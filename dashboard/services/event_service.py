@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from utils.time_format import time_display
+from utils.status import severity_badge_class
+
 
 class EventService:
     """Lightweight operational event journal for ACE dashboard state changes.
@@ -106,7 +109,8 @@ class EventService:
             rows = [r for r in rows if r.get("severity") == severity]
         if source:
             rows = [r for r in rows if r.get("source") == source]
-        return list(reversed(rows[-max(1, min(int(limit), 200)):]))
+        selected = list(reversed(rows[-max(1, min(int(limit), 200)):]))
+        return [self._event_view(row) for row in selected]
 
     def get_summary(self) -> dict[str, Any]:
         rows = self._read_events()
@@ -117,8 +121,18 @@ class EventService:
             "critical": sum(1 for r in recent if r.get("severity") == "critical"),
             "warning": sum(1 for r in recent if r.get("severity") == "warning"),
             "info": sum(1 for r in recent if r.get("severity") == "info"),
-            "latest": rows[-1] if rows else None,
+            "latest": self._event_view(rows[-1]) if rows else None,
         }
+
+
+    def _event_view(self, row: dict[str, Any]) -> dict[str, Any]:
+        view = dict(row)
+        display = time_display(row.get("timestamp"))
+        view["relative_time"] = display["relative"]
+        view["absolute_time"] = display["absolute"]
+        view["display_time"] = display["relative"]
+        view["badge_class"] = severity_badge_class(row.get("severity"))
+        return view
 
     def _snapshot_from_health(self, health: dict[str, Any]) -> dict[str, Any]:
         services = {}

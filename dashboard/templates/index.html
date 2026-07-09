@@ -163,7 +163,7 @@
         <div class="event-list compact-event-list">
             {% for event in recent_events %}
             <div class="event-row {{ event.severity }}">
-                <div class="event-time">{{ event.display_time }}</div>
+                <div class="event-time"><strong>{{ event.relative_time or event.display_time }}</strong><br><span class="muted">{{ event.absolute_time }}</span></div>
                 <div class="event-main">
                     <strong>{{ event.title }}</strong>
                     <span class="muted">{{ event.entity }}</span><br>
@@ -220,7 +220,7 @@
             <label>Source
                 <select name="source">
                     <option value="" {% if not event_filters.source %}selected{% endif %}>All</option>
-                    {% for src in ['health', 'management', 'events'] %}
+                    {% for src in ['health', 'management', 'automation', 'events'] %}
                     <option value="{{ src }}" {% if event_filters.source == src %}selected{% endif %}>{{ src|title }}</option>
                     {% endfor %}
                 </select>
@@ -245,7 +245,7 @@
             <tbody>
             {% for event in events %}
                 <tr>
-                    <td>{{ event.display_time }}</td>
+                    <td><strong>{{ event.relative_time or event.display_time }}</strong><br><span class="muted">{{ event.absolute_time }}</span></td>
                     <td><span class="badge {{ 'red' if event.severity == 'critical' else 'yellow' if event.severity == 'warning' else 'green' if event.severity == 'ok' else 'gray' }}">{{ event.severity|title }}</span></td>
                     <td>{{ event.source|title }}</td>
                     <td><strong>{{ event.title }}</strong></td>
@@ -269,33 +269,33 @@
         <div>
             <h2>Automation Engine</h2>
             <p>Read-only ACEMD scheduler for recurring operational checks and event publishing.</p>
-            <span class="muted">Mode: {{ automation.engine.mode }} · Last tick: {{ automation.engine.last_tick }}</span>
+            <span class="muted">Mode: {{ automation.engine.mode }} · Registry: {{ automation.engine.registry }} · Last tick: {{ automation.engine.last_tick_display.relative }}</span>
         </div>
         <div class="health-status-pill ok">{{ automation.engine.status }}</div>
     </div>
 
     <div class="grid-4 health-metrics">
-        <div class="card compact-card"><h3>Jobs</h3><div class="metric-value">{{ automation.engine.jobs }}</div><span class="muted">{{ automation.engine.enabled }} enabled · {{ automation.engine.disabled }} disabled</span></div>
-        <div class="card compact-card"><h3>Last Run</h3><div class="metric-value small-metric">{{ automation.engine.last_run }}</div><span class="muted">Most recent job execution</span></div>
-        <div class="card compact-card"><h3>Next Run</h3><div class="metric-value small-metric">{{ automation.engine.next_run }}</div><span class="muted">Next scheduled due time</span></div>
+        <div class="card compact-card"><h3>Jobs</h3><div class="metric-value">{{ automation.engine.jobs }}</div><span class="muted">{{ automation.engine.enabled }} enabled · {{ automation.engine.disabled }} disabled · {{ automation.engine.groups }} groups</span></div>
+        <div class="card compact-card"><h3>Last Run</h3><div class="metric-value small-metric">{{ automation.engine.last_run_display.relative }}</div><span class="muted">{{ automation.engine.last_run_display.absolute }}</span></div>
+        <div class="card compact-card"><h3>Next Run</h3><div class="metric-value small-metric">{{ automation.engine.next_run_display.relative }}</div><span class="muted">{{ automation.engine.next_run_display.absolute }}</span></div>
         <div class="card compact-card"><h3>Warnings</h3><div class="metric-value {% if automation.engine.failures %}yellow{% else %}green{% endif %}">{{ automation.engine.failures }}</div><span class="muted">Jobs requiring review</span></div>
     </div>
 
     <div class="card">
         <div class="card-title-line">
-            <h3>Built-in Jobs</h3>
-            <span class="muted">Phase 2.7.0 jobs are safe, read-only checks.</span>
+            <h3>Registered Jobs</h3>
+            <span class="muted">Phase 2.7.2 jobs are registry-backed, safe, read-only checks.</span>
         </div>
         <table class="data-table compact-table automation-table">
             <thead><tr><th>Job</th><th>Schedule</th><th>Last Result</th><th>Last Run</th><th>Next Run</th><th>Action</th></tr></thead>
             <tbody>
             {% for job in automation.jobs %}
                 <tr>
-                    <td><strong>{{ job.name }}</strong><br><span class="muted">{{ job.group }} · {{ job.description }}</span></td>
+                    <td><strong>{{ job.name }}</strong><br><span class="muted">{{ job.group }} · {{ job.category }} · {{ job.description }}</span><br><span class="muted">Depends on: {{ job.dependency_label }}</span></td>
                     <td>{{ job.schedule }}<br><span class="badge {{ 'green' if job.enabled else 'gray' }}">{{ 'Enabled' if job.enabled else 'Disabled' }}</span></td>
-                    <td><span class="badge {{ 'green' if job.last_result_level in ['ok', 'info'] else 'yellow' if job.last_result_level == 'warning' else 'red' if job.last_result_level == 'critical' else 'gray' }}">{{ job.last_result }}</span><br><span class="muted">{{ job.last_detail }}</span></td>
-                    <td>{{ job.last_run }}</td>
-                    <td>{{ job.next_run }}</td>
+                    <td><span class="badge {{ job.last_result_badge }}">{{ job.last_result }}</span><br><span class="muted">{{ job.last_detail }}</span></td>
+                    <td><strong>{{ job.last_run_display.relative }}</strong><br><span class="muted">{{ job.last_run_display.absolute }}</span></td>
+                    <td><strong>{{ job.next_run_display.relative }}</strong><br><span class="muted">{{ job.next_run_display.absolute }}</span></td>
                     <td>
                         <form method="post" action="/automation/run#automation">
                             <input type="hidden" name="job_id" value="{{ job.id }}">
@@ -317,9 +317,9 @@
                 <tbody>
                 {% for row in automation.history[:8] %}
                     <tr>
-                        <td>{{ row.timestamp }}</td>
+                        <td><strong>{{ row.timestamp_display.relative }}</strong><br><span class="muted">{{ row.timestamp_display.absolute }}</span></td>
                         <td>{{ row.job_name }}{% if row.manual %}<br><span class="muted">Manual</span>{% endif %}</td>
-                        <td><span class="badge {{ 'green' if row.level in ['ok', 'info'] else 'yellow' if row.level == 'warning' else 'red' }}">{{ row.status }}</span></td>
+                        <td><span class="badge {{ row.level_badge }}">{{ row.status }}</span></td>
                         <td>{{ row.detail }}</td>
                     </tr>
                 {% endfor %}
@@ -335,7 +335,7 @@
             <div class="event-list compact-event-list">
             {% for event in recent_events %}
                 <div class="event-row {{ event.severity }}">
-                    <div class="event-time">{{ event.display_time }}</div>
+                    <div class="event-time"><strong>{{ event.relative_time or event.display_time }}</strong><br><span class="muted">{{ event.absolute_time }}</span></div>
                     <div class="event-main"><strong>{{ event.title }}</strong><br><span class="muted">{{ event.entity }} · {{ event.message }}</span></div>
                     <span class="badge {{ 'red' if event.severity == 'critical' else 'yellow' if event.severity == 'warning' else 'green' if event.severity == 'ok' else 'gray' }}">{{ event.severity|title }}</span>
                 </div>

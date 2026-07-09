@@ -6,3 +6,16 @@
 .health-hero{display:flex;justify-content:space-between;align-items:center;gap:16px}.health-hero h2{border-bottom:none;margin-bottom:6px}.health-hero.ok{border-color:#376b25}.health-hero.warning{border-color:#7b6a1d}.health-hero.critical{border-color:#8a3333}.health-status-pill{border-radius:999px;padding:10px 18px;font-size:18px;font-weight:bold;border:1px solid #666}.health-status-pill.ok{background:#183b14;border-color:#376b25;color:var(--green)}.health-status-pill.warning{background:#3b3514;border-color:#7b6a1d;color:var(--yellow)}.health-status-pill.critical{background:#421818;border-color:#8a3333;color:var(--red)}.health-metrics .metric-value{font-size:24px;font-weight:bold}@media(max-width:900px){.health-hero{display:block}.health-status-pill{display:inline-block;margin-top:10px}}
 .event-list{display:grid;gap:8px}.event-row{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:12px;align-items:start;border:1px solid #3f3f3f;border-radius:6px;padding:8px 10px;background:#202020}.event-row.critical{border-color:#8a3333}.event-row.warning{border-color:#7b6a1d}.event-row.ok{border-color:#376b25}.event-time{color:var(--muted);font-size:12px;white-space:nowrap}.event-main{line-height:1.35}.compact-event-list .event-row{padding:7px 9px}.event-table td{font-size:14px}@media(max-width:900px){.event-row{grid-template-columns:1fr}.event-time{white-space:normal}}
 .small-metric{font-size:13px!important;word-break:break-word;overflow-wrap:anywhere}.automation-table td{font-size:14px}.automation-table form{margin:0}@media(max-width:900px){.automation-table,.automation-table thead,.automation-table tbody,.automation-table th,.automation-table td,.automation-table tr{display:block}.automation-table thead{display:none}.automation-table tr{border-bottom:1px solid #444;padding:8px 0}.automation-table td{border-bottom:none}}
+
+/* Phase 2.7.2 shared UI polish */
+.event-time {
+    min-width: 7.5rem;
+    white-space: nowrap;
+}
+.small-metric {
+    font-size: 1.15rem;
+    line-height: 1.2;
+}
+.automation-table td {
+    vertical-align: top;
+}

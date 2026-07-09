@@ -8,10 +8,10 @@ ACEMD is **not** the ACE emulator and is **not** a fork of ACE. ACE refers to th
 
 | Field | Value |
 |---|---|
-| Version | 2.7.1-dev |
+| Version | 2.7.2-dev |
 | Phase | 2 - ACEMD Platform Foundation |
-| Milestone | 2.7.1 - Repository & Documentation Reorganization |
-| Build | 2026.07.08-271 |
+| Milestone | 2.7.2 - Automation Framework & UI Polish |
+| Build | 2026.07.08-272 |
 
 ## Project direction
 
@@ -44,7 +44,7 @@ See:
 - Management operations console for whitelisted wrapper actions with output capture, dry-run support, filtering, and collapsible subsystem groups.
 - Health workspace for read-only operational status.
 - Events workspace for operational monitoring history.
-- Automation workspace for request-driven scheduler ticks, built-in read-only jobs, Run Now support, and job history.
+- Automation workspace for request-driven scheduler ticks, registry-backed read-only jobs, Run Now support, relative run times, and job history.
 - About workspace for project metadata.
 
 ## Deployment
