@@ -9,6 +9,7 @@ from routes.management_routes import management_bp
 from routes.health_routes import health_bp
 from routes.event_routes import events_bp
 from routes.automation_routes import automation_bp
+from routes.metrics_routes import metrics_bp
 
 
 def create_app() -> Flask:
@@ -21,6 +22,7 @@ def create_app() -> Flask:
     app.register_blueprint(health_bp)
     app.register_blueprint(events_bp)
     app.register_blueprint(automation_bp)
+    app.register_blueprint(metrics_bp)
     app.register_blueprint(about_bp)
     return app
 

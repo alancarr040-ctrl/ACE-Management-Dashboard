@@ -86,7 +86,7 @@ Refine the Automation Engine with a registry-backed job model and shared UI help
 
 ### 2.8.0 - Metrics & Resource Monitoring
 
-Add system and container metrics to help explain why a service is unhealthy or under load.
+Add system and container metrics to help explain why a service is unhealthy or under load. Phase 2.8.0 introduces the shared Metrics Service, Metrics workspace, metrics API, threshold checks, and Metrics Snapshot automation job.
 
 ### 2.9.0 - Notifications & Alerts
 

@@ -13,6 +13,7 @@ The repository root is intentionally kept small and contains only repository ide
 | `Automation/` | Scheduler, automation, and job architecture documentation. |
 | `Development/` | Git workflow, documentation standards, and contributor guidance. |
 | `Operations/` | Runtime operations such as Docker, backups, database, network, recovery, and server notes. |
+| `Metrics/` | Metrics service, collectors, thresholds, and resource monitoring documentation. |
 | `Packages/` | Work package definitions for upcoming or active phases. |
 | `Releases/` | Per-release README and release notes. |
 | `Vision/` | Product vision, project identity, and infrastructure overview. |

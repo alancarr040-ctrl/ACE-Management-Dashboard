@@ -8,10 +8,10 @@ ACEMD is **not** the ACE emulator and is **not** a fork of ACE. ACE refers to th
 
 | Field | Value |
 |---|---|
-| Version | 2.7.2-dev |
+| Version | 2.8.0-dev |
 | Phase | 2 - ACEMD Platform Foundation |
-| Milestone | 2.7.2 - Automation Framework & UI Polish |
-| Build | 2026.07.08-272 |
+| Milestone | 2.8.0 - Metrics & Resource Monitoring |
+| Build | 2026.07.09-280 |
 
 ## Project direction
 
@@ -45,6 +45,7 @@ See:
 - Health workspace for read-only operational status.
 - Events workspace for operational monitoring history.
 - Automation workspace for request-driven scheduler ticks, registry-backed read-only jobs, Run Now support, relative run times, and job history.
+- Metrics workspace for CPU/load, memory, disk, Docker container resources, database container resources, ACEMD internal metrics, and threshold checks.
 - About workspace for project metadata.
 
 ## Deployment

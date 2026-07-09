@@ -19,3 +19,6 @@
 .automation-table td {
     vertical-align: top;
 }
+
+/* Phase 2.8.0 Metrics */
+.metric-bar{height:8px;border:1px solid #444;background:#151515;border-radius:999px;overflow:hidden;margin:7px 0}.metric-bar span{display:block;height:100%;background:#777}.metric-bar span.green{background:var(--green)}.metric-bar span.yellow{background:var(--yellow)}.metric-bar span.red{background:var(--red)}.metric-bar span.gray{background:#777}.table-bar{width:120px;margin-top:5px}.metrics-table td{font-size:14px}.metrics-table td:nth-child(3),.metrics-table td:nth-child(4){white-space:nowrap}@media(max-width:900px){.metrics-table,.metrics-table thead,.metrics-table tbody,.metrics-table th,.metrics-table td,.metrics-table tr{display:block}.metrics-table thead{display:none}.metrics-table tr{border-bottom:1px solid #444;padding:8px 0}.metrics-table td{border-bottom:none}.table-bar{width:100%}}

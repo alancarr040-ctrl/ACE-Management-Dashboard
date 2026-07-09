@@ -1,19 +1,19 @@
 # ACE Management Dashboard Project Metadata
 
 name: ACE Management Dashboard
-version: 2.7.2-dev
+version: 2.8.0-dev
 phase: 2 - ACEMD Platform Foundation
-milestone: 2.7.2 - Automation Framework & UI Polish
+milestone: 2.8.0 - Metrics & Resource Monitoring
 status: Development
-build: 2026.07.08-272
+build: 2026.07.09-280
 
 ## Current Milestone
 
-2.7.2 refines the Automation subsystem by introducing a plugin-style in-process job registry, job metadata, shared time formatting helpers, and consistent relative/absolute timestamp presentation across Events and Automation views.
+2.8.0 introduces the ACEMD Metrics Service, Metrics workspace, metrics API, resource threshold checks, container resource views, and the Metrics Snapshot automation job.
 
 ## Notes
 
-- The Automation Engine remains request-driven and read-only.
-- Built-in automation jobs are now registered through a shared job registry rather than being embedded directly in the scheduler loop.
-- Operator-facing times now show human-readable relative values first, with muted UTC timestamps retained for auditability.
-- This phase prepares ACEMD for future subsystem-provided automation jobs.
+- Metrics are read-only and compact by design.
+- ACEMD does not attempt to replace a full telemetry stack in this phase.
+- Metrics become a shared platform service for Health, Automation, Notifications, and future ACE administration modules.
+- SQL-level and ACE runtime/game metrics are deferred to later data integration phases.

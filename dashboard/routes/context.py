@@ -10,6 +10,8 @@ from services.management_service import ManagementService
 from services.health_service import HealthService
 from services.event_service import EventService
 from services.automation_service import AutomationService
+from services.automation_jobs import AutomationJob
+from services.metrics_service import MetricsService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -19,6 +21,32 @@ management_service = ManagementService()
 health_service = HealthService(docker_service, backup_service, system_service, management_service)
 event_service = EventService()
 automation_service = AutomationService(health_service, backup_service, system_service, management_service, event_service)
+metrics_service = MetricsService(docker_service, system_service, backup_service, management_service, event_service)
+metrics_service.bind_automation(automation_service)
+
+
+def _run_metrics_snapshot():
+    metrics = metrics_service.get_metrics()
+    overall = metrics.get("overall", {})
+    summary = metrics.get("summary", {})
+    return {
+        "level": overall.get("level", "unknown"),
+        "status": overall.get("label", "Unknown"),
+        "detail": f"CPU {summary.get('cpu', 'Unknown')}, memory {summary.get('memory', 'Unknown')}, disk {summary.get('disk', 'Unknown')}."
+    }
+
+
+automation_service.registry.register(AutomationJob(
+    "metrics_snapshot",
+    "Metrics Snapshot",
+    "Metrics",
+    "Every minute",
+    60,
+    "Collects the read-only ACEMD metrics snapshot and applies resource thresholds.",
+    _run_metrics_snapshot,
+    category="Metrics",
+    dependencies=("metrics_service", "event_service"),
+))
 ace_status_service = ACEStatusService(docker_service)
 ace_log_service = ACELogService(docker_service)
 

@@ -350,6 +350,139 @@
 </section>
 {% endif %}
 
+
+{% if active_tab == 'metrics' %}
+<section id="metrics" data-auto-refresh="30">
+    <div class="card health-hero {{ metrics.overall.level }}">
+        <div>
+            <h2>Metrics & Resource Monitoring</h2>
+            <p>{{ metrics.overall.message }}</p>
+            <span class="muted">Generated: {{ metrics.generated_display.relative }} · {{ metrics.generated_display.absolute }} · Auto-refresh: 30 seconds</span>
+        </div>
+        <div class="health-status-pill {{ metrics.overall.level }}">{{ metrics.overall.label }}</div>
+    </div>
+
+    <div class="grid-4 health-metrics">
+        <div class="card compact-card">
+            <h3>CPU</h3>
+            <div class="metric-value {{ metrics.system.cpu.badge }}">{{ metrics.system.cpu.percent }}</div>
+            <div class="metric-bar"><span class="{{ metrics.system.cpu.badge }}" style="width: {{ metrics.system.cpu.raw_percent if metrics.system.cpu.raw_percent < 100 else 100 }}%"></span></div>
+            <span class="muted">Load: {{ metrics.system.cpu.load1 }} / {{ metrics.system.cpu.load5 }} / {{ metrics.system.cpu.load15 }} · {{ metrics.system.cpu.cores }} cores</span>
+        </div>
+        <div class="card compact-card">
+            <h3>Memory</h3>
+            <div class="metric-value {{ metrics.system.memory.badge }}">{{ metrics.system.memory.percent }}</div>
+            <div class="metric-bar"><span class="{{ metrics.system.memory.badge }}" style="width: {{ metrics.system.memory.raw_percent if metrics.system.memory.raw_percent < 100 else 100 }}%"></span></div>
+            <span class="muted">Available: {{ metrics.system.memory.available }} · Used: {{ metrics.system.memory.used }}</span>
+        </div>
+        <div class="card compact-card">
+            <h3>Project Disk</h3>
+            <div class="metric-value {{ metrics.storage.project.badge }}">{{ metrics.storage.project.percent }}</div>
+            <div class="metric-bar"><span class="{{ metrics.storage.project.badge }}" style="width: {{ metrics.storage.project.raw_percent if metrics.storage.project.raw_percent < 100 else 100 }}%"></span></div>
+            <span class="muted">Free: {{ metrics.storage.project.free }}</span>
+        </div>
+        <div class="card compact-card">
+            <h3>Containers</h3>
+            <div class="metric-value {{ metrics.docker.badge }}">{{ metrics.docker.running }}/{{ metrics.docker.total }}</div>
+            <span class="muted">Docker CPU total: {{ metrics.docker.cpu_total }} · Avg memory: {{ metrics.docker.memory_average }}</span>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>System Resources</h3>
+            <div class="property-row compact"><div class="property-label">CPU Load</div><div class="property-value {{ metrics.system.cpu.badge }}">{{ metrics.system.cpu.percent }}</div></div>
+            <div class="property-row compact"><div class="property-label">Load Average</div><div class="property-value">{{ metrics.system.cpu.load1 }} / {{ metrics.system.cpu.load5 }} / {{ metrics.system.cpu.load15 }}</div></div>
+            <div class="property-row compact"><div class="property-label">Memory</div><div class="property-value {{ metrics.system.memory.badge }}">{{ metrics.system.memory.used }} used / {{ metrics.system.memory.total }}</div></div>
+            <div class="property-row compact"><div class="property-label">Cached</div><div class="property-value">{{ metrics.system.memory.cached }}</div></div>
+            <div class="property-row compact"><div class="property-label">Swap</div><div class="property-value">{{ metrics.system.memory.swap_used }} / {{ metrics.system.memory.swap_total }} ({{ metrics.system.memory.swap_percent }})</div></div>
+        </div>
+        <div class="card">
+            <h3>ACEMD Metrics</h3>
+            <div class="property-row compact"><div class="property-label">Wrapper</div><div class="property-value">{{ metrics.acemd.wrapper_version }}</div></div>
+            <div class="property-row compact"><div class="property-label">Actions</div><div class="property-value">{{ metrics.acemd.wrapper_actions }}</div></div>
+            <div class="property-row compact"><div class="property-label">Automation Jobs</div><div class="property-value {{ metrics.acemd.badge }}">{{ metrics.acemd.automation_jobs }}</div></div>
+            <div class="property-row compact"><div class="property-label">Automation Warnings</div><div class="property-value {{ metrics.acemd.badge }}">{{ metrics.acemd.automation_failures }}</div></div>
+            <div class="property-row compact"><div class="property-label">Events</div><div class="property-value">{{ metrics.acemd.events_total }} total · {{ metrics.acemd.events_warning }} warning · {{ metrics.acemd.events_critical }} critical</div></div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Storage</h3>
+            <table class="data-table compact-table">
+                <thead><tr><th>Path</th><th>Usage</th><th>Used</th><th>Free</th></tr></thead>
+                <tbody>
+                    {% for disk in [metrics.storage.project, metrics.storage.backups] %}
+                    <tr>
+                        <td><strong>{{ disk.label }}</strong><br><span class="muted">{{ disk.path }}</span></td>
+                        <td><span class="badge {{ disk.badge }}">{{ disk.percent }}</span><div class="metric-bar table-bar"><span class="{{ disk.badge }}" style="width: {{ disk.raw_percent if disk.raw_percent < 100 else 100 }}%"></span></div></td>
+                        <td>{{ disk.used }} / {{ disk.total }}</td>
+                        <td>{{ disk.free }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Database Metrics</h3>
+            <div class="property-row compact"><div class="property-label">Status</div><div class="property-value {{ metrics.database.badge }}">{{ metrics.database.status }}</div></div>
+            <div class="property-row compact"><div class="property-label">Health</div><div class="property-value">{{ metrics.database.health }}</div></div>
+            <div class="property-row compact"><div class="property-label">CPU</div><div class="property-value">{{ metrics.database.cpu_percent }}</div></div>
+            <div class="property-row compact"><div class="property-label">Memory</div><div class="property-value">{{ metrics.database.memory_percent }} · {{ metrics.database.memory_used }}</div></div>
+            <div class="property-row compact"><div class="property-label">Restarts</div><div class="property-value">{{ metrics.database.restarts }}</div></div>
+            <div class="property-row compact"><div class="property-label">Uptime</div><div class="property-value">{{ metrics.database.uptime }}</div></div>
+            <p class="muted">{{ metrics.database.detail }}</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Container Resource Metrics</h3>
+        <table class="data-table compact-table metrics-table">
+            <thead><tr><th>Container</th><th>Status</th><th>CPU</th><th>Memory</th><th>Network</th><th>Restarts</th></tr></thead>
+            <tbody>
+            {% for container in metrics.containers %}
+                <tr>
+                    <td><strong>{{ container.friendly_name }}</strong><br><span class="muted">{{ container.name }} · {{ container.subtitle }}</span></td>
+                    <td><span class="badge {{ container.badge }}">{{ container.status }}</span><br><span class="muted">{{ container.health }}{% if container.uptime %} · {{ container.uptime }}{% endif %}</span></td>
+                    <td>{{ container.cpu_percent }}</td>
+                    <td>{{ container.memory_percent }}<br><span class="muted">{{ container.memory_used }} / {{ container.memory_limit }}</span></td>
+                    <td><span class="muted">RX</span> {{ container.network_rx }}<br><span class="muted">TX</span> {{ container.network_tx }}</td>
+                    <td>{{ container.restarts }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Metric Threshold Checks</h3>
+        <table class="data-table compact-table">
+            <thead><tr><th>Status</th><th>Metric</th><th>Value</th><th>Detail</th></tr></thead>
+            <tbody>
+            {% for check in metrics.checks %}
+                <tr>
+                    <td><span class="badge {{ check.badge }}">{{ check.level|title }}</span></td>
+                    <td>{{ check.name }}</td>
+                    <td>{{ check.status }}</td>
+                    <td>{{ check.detail }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="muted">Thresholds: CPU {{ metrics.thresholds.cpu_warning }}/{{ metrics.thresholds.cpu_critical }}, Memory {{ metrics.thresholds.memory_warning }}/{{ metrics.thresholds.memory_critical }}, Disk {{ metrics.thresholds.disk_warning }}/{{ metrics.thresholds.disk_critical }}.</p>
+    </div>
+</section>
+<script>
+(function(){
+  var metrics = document.getElementById('metrics');
+  if (!metrics) return;
+  var seconds = parseInt(metrics.getAttribute('data-auto-refresh') || '30', 10);
+  if (seconds > 0) window.setTimeout(function(){ window.location.reload(); }, seconds * 1000);
+})();
+</script>
+{% endif %}
+
 {% if active_tab == 'docker' %}
 <section id="docker">
     <h2>Docker Management</h2>

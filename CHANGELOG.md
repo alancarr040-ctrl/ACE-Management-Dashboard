@@ -2,6 +2,17 @@
 
 This changelog summarizes certified project milestones. Detailed release notes remain available in the per-package release documentation under `docs/Releases/`.
 
+## 2.8.0 - Metrics & Resource Monitoring
+
+- Added ACEMD Metrics Service.
+- Added Metrics workspace and `/api/metrics`.
+- Added CPU/load, memory, project disk, and backup disk metrics.
+- Added Docker container CPU, memory, network, restart, health, and uptime metrics.
+- Added database container resource summary.
+- Added ACEMD internal metrics for wrapper, automation, and events.
+- Added resource threshold checks.
+- Added Metrics Snapshot automation job.
+- Added Metrics documentation and EDR-0012.
 
 ## 2.7.2 - Automation Framework & UI Polish
 

@@ -81,3 +81,8 @@ The 4.x track is reserved for advanced features after the platform and administr
 - Operator-facing timestamps should use relative time first with muted absolute timestamps retained for auditability.
 - Future account and character tools must use shared health, event, and safety services instead of duplicating platform logic.
 - Documentation must be updated whenever the roadmap or architecture changes.
+
+
+## Phase 2.8.0 - Metrics & Resource Monitoring
+
+Phase 2.8.0 introduces the shared ACEMD Metrics Service, Metrics workspace, metrics API, threshold checks, Docker/container resource metrics, system resource metrics, database container metrics, and the Metrics Snapshot automation job. Metrics remain read-only and compact. Full alert delivery is reserved for Phase 2.9.0.
