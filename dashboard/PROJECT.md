@@ -1,21 +1,20 @@
 # ACE Management Dashboard Project Metadata
 
 name: ACE Management Dashboard
-version: 2.9.1-dev
-phase: 2 - ACEMD Platform Foundation
-milestone: 2.9.1 - Workspace & Navigation Framework
+version: 3.0.0-dev
+phase: 3 - ACE Administration Foundation
+milestone: 3.0.0 - Read-Only ACE Data Foundation
 status: Development
-build: 2026.07.09-291
+build: 2026.07.09-300
 
 ## Current Milestone
 
-2.9.1 reorganizes ACEMD navigation around permanent platform workspaces before Phase 3 administration modules begin.
+3.0.0 begins Phase 3 by introducing ACEMD's ACE Data Service and the first read-only Administration modules for ACE-facing data.
 
 ## Notes
 
-- Top-level navigation represents stable ACEMD workspaces, not individual features.
-- Existing Phase 2 pages remain available as workspace modules.
-- Operations contains modules that change the system.
-- Monitoring contains modules that observe the system.
-- Administration is reserved for Phase 3 ACE-facing management modules.
-- Tools is reserved for diagnostics, maintenance, import/export, API, and developer utilities.
+- ACEMD owns the management platform boundary.
+- ACE data access is routed through ACEDataService.
+- Phase 3.0.0 is read-only by design.
+- Administration now includes Servers, Accounts, Characters, World, and Database read-only discovery pages.
+- Future write or management features must build on this service foundation rather than bypassing it.

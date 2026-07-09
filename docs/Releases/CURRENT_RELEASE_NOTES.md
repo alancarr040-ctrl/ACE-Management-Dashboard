@@ -1,7 +1,7 @@
 # Current Release Notes
 
-## 2.9.1 - Workspace & Navigation Framework
+## 3.0.0 - Read-Only ACE Data Foundation
 
-Phase 2.9.1 introduces permanent workspace navigation for ACEMD. The main navigation is now organized around Dashboard, Operations, Monitoring, Administration, Tools, and About, with existing modules available through secondary workspace navigation.
+Phase 3.0.0 introduces ACEMD's ACE Data Service and read-only Administration pages for Servers, Accounts, Characters, World, and Database discovery.
 
 No SQL migration is required.

@@ -125,6 +125,8 @@
 </section>
 {% endif %}
 
+{% include "components/ace_data.html" %}
+
 {% if active_tab == 'health' %}
 <section id="health" data-auto-refresh="30">
     <div class="card health-hero {{ health.overall.level }}">

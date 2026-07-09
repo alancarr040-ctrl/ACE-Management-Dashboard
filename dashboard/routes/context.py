@@ -14,6 +14,7 @@ from services.automation_jobs import AutomationJob
 from services.metrics_service import MetricsService
 from services.notification_service import NotificationService
 from services.workspace_service import WorkspaceService
+from services.ace_data_service import ACEDataService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -27,6 +28,7 @@ metrics_service = MetricsService(docker_service, system_service, backup_service,
 metrics_service.bind_automation(automation_service)
 notification_service = NotificationService(health_service, metrics_service, automation_service, event_service)
 workspace_service = WorkspaceService()
+ace_data_service = ACEDataService()
 
 
 def _run_metrics_snapshot():

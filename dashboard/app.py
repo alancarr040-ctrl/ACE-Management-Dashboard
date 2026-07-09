@@ -12,6 +12,7 @@ from routes.automation_routes import automation_bp
 from routes.metrics_routes import metrics_bp
 from routes.notification_routes import notifications_bp
 from routes.workspace_routes import workspace_bp
+from routes.administration_routes import administration_bp
 
 
 def create_app() -> Flask:
@@ -27,6 +28,7 @@ def create_app() -> Flask:
     app.register_blueprint(metrics_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(workspace_bp)
+    app.register_blueprint(administration_bp)
     app.register_blueprint(about_bp)
     return app
 
