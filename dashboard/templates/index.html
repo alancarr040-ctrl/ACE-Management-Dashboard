@@ -76,6 +76,55 @@
 {% endif %}
 
 
+
+{% if active_tab in ['operations', 'monitoring', 'administration', 'tools'] %}
+<section id="{{ active_tab }}">
+    <div class="card health-hero ok">
+        <div>
+            <h2>{{ workspace.label }}</h2>
+            <p>{{ workspace.description }}</p>
+            <p class="muted">Top-level navigation now represents permanent ACEMD workspaces. Modules live inside the workspace that owns their responsibility.</p>
+        </div>
+        <div class="health-status-pill ok">Workspace</div>
+    </div>
+
+    {% if active_tab == 'operations' %}
+    <div class="grid-3">
+        <div class="card compact-card"><h3>Controlled Actions</h3><div class="green">{{ management.actions|length if management is defined and management.actions is defined else 'Ready' }}</div><span class="muted">Wrapper-backed operations remain under Management.</span></div>
+        <div class="card compact-card"><h3>Automation</h3><div class="green">Active</div><span class="muted">Scheduled jobs and rule execution remain operational services.</span></div>
+        <div class="card compact-card"><h3>Notifications</h3><div class="{% if notification_summary.active %}yellow{% else %}green{% endif %}">{{ notification_summary.active }}</div><span class="muted">Operator attention items.</span></div>
+    </div>
+    {% elif active_tab == 'monitoring' %}
+    <div class="grid-4">
+        <div class="card compact-card"><h3>Health</h3><div class="green">Available</div><span class="muted">Operational health checks.</span></div>
+        <div class="card compact-card"><h3>Metrics</h3><div class="green">Available</div><span class="muted">Current resource state.</span></div>
+        <div class="card compact-card"><h3>Events</h3><div class="green">Journal</div><span class="muted">Operational history.</span></div>
+        <div class="card compact-card"><h3>Logs</h3><div class="green">Available</div><span class="muted">Container log review.</span></div>
+    </div>
+    {% elif active_tab == 'administration' %}
+    <div class="notice">
+        <strong>Phase 3 workspace.</strong> Administration is now reserved for ACE-facing management modules such as servers, accounts, characters, world, database, and configuration.
+    </div>
+    {% elif active_tab == 'tools' %}
+    <div class="notice">
+        <strong>Utility workspace.</strong> Tools is reserved for diagnostics, import/export, maintenance, API inspection, terminal-style helpers, and developer utilities.
+    </div>
+    {% endif %}
+
+    <div class="workspace-module-grid">
+        {% for item in workspace['items'] %}
+        <a class="workspace-module-card {% if item.status == 'Planned' %}planned{% endif %}" href="{{ item.href }}">
+            <div class="card-title-line">
+                <h3>{{ item.label }}</h3>
+                <span class="badge {% if item.status == 'Active' %}green{% else %}gray{% endif %}">{{ item.status }}</span>
+            </div>
+            <p>{{ item.description }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 {% if active_tab == 'health' %}
 <section id="health" data-auto-refresh="30">
     <div class="card health-hero {{ health.overall.level }}">

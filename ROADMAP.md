@@ -45,7 +45,8 @@ The current 2.x phases establish the platform layer. Beginning with the 3.x seri
 | 2.7.1 | Repository & Documentation Reorganization | Complete | Clean documentation layout and root directory policy. |
 | 2.7.2 | Automation Framework & UI Polish | Complete | Job registry foundation, shared time formatting, and UI consistency. |
 | 2.8.0 | Metrics & Resource Monitoring | Complete | CPU, memory, disk, network, and container resource views. |
-| 2.9.0 | Notifications & Alerts | Planned | Configurable notifications for health, jobs, and warnings. |
+| 2.9.0 | Notifications & Alerts | Complete | Notification service, alert lifecycle, and local/dashboard operator alerts. |
+| 2.9.1 | Workspace & Navigation Framework | Current Development | Compact workspace navigation before Phase 3 administration modules. |
 | 3.0.0 | ACE Data Integration Foundation | Planned | Safe read-only access patterns for ACE account, character, and world data. |
 | 3.1.0 | Account Management | Planned | View and manage ACE accounts through ACEMD. |
 | 3.2.0 | Character Management | Planned | View and manage ACE characters through ACEMD. |
@@ -91,6 +92,10 @@ Add system and container metrics to help explain why a service is unhealthy or u
 ### 2.9.0 - Notifications & Alerts
 
 Notify operators when health changes, jobs fail, backups become stale, disk usage crosses thresholds, or other important events occur.
+
+### 2.9.1 - Workspace & Navigation Framework
+
+Reorganize ACEMD around permanent top-level workspaces: Dashboard, Operations, Monitoring, Administration, Tools, and About. Existing Phase 2 modules remain available as workspace modules while Phase 3 administration gains a dedicated home.
 
 ## ACE administration track
 

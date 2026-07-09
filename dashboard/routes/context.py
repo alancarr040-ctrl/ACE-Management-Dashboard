@@ -13,6 +13,7 @@ from services.automation_service import AutomationService
 from services.automation_jobs import AutomationJob
 from services.metrics_service import MetricsService
 from services.notification_service import NotificationService
+from services.workspace_service import WorkspaceService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -25,6 +26,7 @@ automation_service = AutomationService(health_service, backup_service, system_se
 metrics_service = MetricsService(docker_service, system_service, backup_service, management_service, event_service)
 metrics_service.bind_automation(automation_service)
 notification_service = NotificationService(health_service, metrics_service, automation_service, event_service)
+workspace_service = WorkspaceService()
 
 
 def _run_metrics_snapshot():
@@ -59,6 +61,7 @@ def common_context(active_tab: str, message: dict | None = None):
     latest_backup = backups[0] if backups else None
     return {
         "active_tab": active_tab,
+        "workspace_nav": workspace_service.get_navigation(active_tab),
         "project": project_service.get_info(),
         "containers": containers,
         "docker_summary": docker_service.get_summary(),

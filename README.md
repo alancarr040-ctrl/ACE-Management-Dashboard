@@ -8,9 +8,9 @@ ACEMD is **not** the ACE emulator and is **not** a fork of ACE. ACE refers to th
 
 | Field | Value |
 |---|---|
-| Version | 2.9.0-dev |
+| Version | 2.9.1-dev |
 | Phase | 2 - ACEMD Platform Foundation |
-| Milestone | 2.9.0 - Notifications & Alerts |
+| Milestone | 2.9.1 - Workspace & Navigation Framework |
 | Build | 2026.07.09-280 |
 
 ## Project direction

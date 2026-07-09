@@ -23,9 +23,10 @@ Future packages must update this document when architecture, phase order, subsys
 | 2.6.1 | Roadmap & Vision | Complete |
 | 2.7.0 | Scheduler & Automation | Complete |
 | 2.7.1 | Repository & Documentation Reorganization | Complete |
-| 2.7.2 | Automation Framework & UI Polish | Current Development |
+| 2.7.2 | Automation Framework & UI Polish | Complete |
 | 2.8.0 | Metrics & Resource Monitoring | Complete |
-| 2.9.0 | Notifications & Alerts | Current Development |
+| 2.9.0 | Notifications & Alerts | Complete |
+| 2.9.1 | Workspace & Navigation Framework | Current Development |
 | 3.0.0 | ACE Data Integration Foundation | Planned |
 | 3.1.0 | Account Management | Planned |
 | 3.2.0 | Character Management | Planned |
@@ -47,6 +48,7 @@ The 2.x track builds the operational foundation for ACEMD.
 - Shared UI helpers.
 - Metrics.
 - Notifications.
+- Workspace navigation framework.
 
 ### ACE administration track: 3.x
 
@@ -91,3 +93,7 @@ Phase 2.8.0 introduces the shared ACEMD Metrics Service, Metrics workspace, metr
 ## Phase 2.9.0 - Notifications & Alerts
 
 Phase 2.9.0 introduces the shared ACEMD Notification Service, Notifications workspace, alert lifecycle actions, local/dashboard delivery, and alert rules based on Health, Metrics, Automation, and critical Events. External channels are framework placeholders only in this phase.
+
+## Phase 2.9.1 - Workspace & Navigation Framework
+
+Phase 2.9.1 reorganizes ACEMD around permanent top-level workspaces before Phase 3 begins. Dashboard, Operations, Monitoring, Administration, Tools, and About become the stable navigation bank. Existing modules move into workspace secondary navigation without changing their URLs.

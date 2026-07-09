@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.9.1 - Workspace & Navigation Framework
+
+- Added Workspace Service as the shared navigation model.
+- Reorganized main navigation into Dashboard, Operations, Monitoring, Administration, Tools, and About.
+- Added workspace landing pages for Operations, Monitoring, Administration, and Tools.
+- Added secondary navigation for modules within each workspace.
+- Preserved existing page URLs for all Phase 2 modules.
+- Added navigation framework documentation.
+
 ## 2.9.0 - Notifications & Alerts
 
 - Added shared Notification Service.

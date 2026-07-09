@@ -1,13 +1,15 @@
-<nav class="tabs">
+<nav class="tabs primary-tabs">
     <a class="tab {% if active_tab == 'dashboard' %}active{% endif %}" href="/">Dashboard</a>
-    <a class="tab {% if active_tab == 'docker' %}active{% endif %}" href="/docker#docker">Docker</a>
-    <a class="tab {% if active_tab == 'backups' %}active{% endif %}" href="/backups#backups">Backups</a>
-    <a class="tab {% if active_tab == 'logs' %}active{% endif %}" href="/logs#logs">Logs</a>
-    <a class="tab {% if active_tab == 'management' %}active{% endif %}" href="/management#management">Management</a>
-    <a class="tab {% if active_tab == 'health' %}active{% endif %}" href="/health#health">Health</a>
-    <a class="tab {% if active_tab == 'events' %}active{% endif %}" href="/events#events">Events</a>
-    <a class="tab {% if active_tab == 'automation' %}active{% endif %}" href="/automation#automation">Automation</a>
-    <a class="tab {% if active_tab == 'metrics' %}active{% endif %}" href="/metrics#metrics">Metrics</a>
-    <a class="tab {% if active_tab == 'notifications' %}active{% endif %}" href="/notifications#notifications">Notifications{% if notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
+    {% for workspace in workspace_nav.workspaces %}
+        <a class="tab {% if workspace_nav.active_workspace == workspace.key %}active{% endif %}" href="{{ workspace.href }}">{{ workspace.label }}{% if workspace.key == 'operations' and notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
+    {% endfor %}
     <a class="tab {% if active_tab == 'about' %}active{% endif %}" href="/about#about">About</a>
 </nav>
+
+{% if workspace_nav.active_items %}
+<nav class="tabs workspace-tabs">
+    {% for item in workspace_nav.active_items %}
+        <a class="tab workspace-tab {% if active_tab == item.key %}active{% endif %} {% if item.status == 'Planned' %}disabled{% endif %}" href="{{ item.href }}">{{ item.label }}{% if item.key == 'notifications' and notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
+    {% endfor %}
+</nav>
+{% endif %}
