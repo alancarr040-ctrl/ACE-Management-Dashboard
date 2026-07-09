@@ -1,17 +1,28 @@
-# Release Notes - 3.0.1 ACE Schema Discovery
+# Release Notes - 3.0.1 ACE Data Explorer
+
+3.0.1 builds on the certified 3.0.0 ACE Read-Only Data Foundation by turning the initial read-only Administration modules into practical ACE data explorers.
 
 ## Added
 
-- ACEDataService read-only data gateway.
-- Read-only Administration routes for Servers, Accounts, Characters, World, and Database.
-- ACE schema baseline for `ace_auth`, `ace_shard`, and `ace_world`.
-- Guarded SQL query layer that rejects mutation-oriented SQL.
-- PyMySQL dependency for live ACE MySQL access.
-- ACE schema and read-only pattern documentation.
+- Read-only account detail explorer with linked characters.
+- Read-only character detail explorer with representative ACE property sampling.
+- Clickable Database Explorer table detail views with columns, indexes, live row counts, and redacted sample rows.
+- Table detail links from the database inventory.
+- Centralized `dashboard/config/project.json` metadata source loaded by `ProjectService`.
 
-## Changed
+## Improved
 
-- Administration workspace modules now link to real read-only explorer pages.
+- Account detail queries now tolerate optional ACE account columns that may not exist in every ACE schema.
+- Database table detail views normalize MySQL/MariaDB `information_schema` key casing before rendering.
+- Wide schema/sample-row tables now use horizontal scrolling instead of expanding the page layout.
+- Wide Database Explorer tables keep the first identifying column sticky where supported.
+
+## Safety
+
+- All ACE data access remains routed through `ACEDataService`.
+- Mutation SQL remains rejected by the ACE Data Service guard.
+- Password hashes, salts, and sensitive sample-row fields remain redacted.
+- No write actions, edit forms, delete buttons, or mutation routes are included.
 
 ## SQL
 

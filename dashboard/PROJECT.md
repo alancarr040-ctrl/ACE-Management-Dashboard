@@ -1,19 +1,9 @@
-# ACE Management Dashboard Project Metadata
+# ACE Management Dashboard
 
-name: ACE Management Dashboard
-version: 3.0.1a-dev
-phase: 3 - ACE Data Foundation
-milestone: 3.0.1a - ACE Schema Discovery Polish
-status: Development
-build: 2026.07.09-301a
+ACEMD is a management platform that sits above ACE.
 
-## Current Milestone
+Current milestone: **3.0.1 — ACE Data Explorer**
 
-3.0.1a polishes ACE schema discovery display and live character/account verification fields for the Administration workspace.
+Phase 3 establishes safe ACE-facing administration foundations. ACE data access is routed through ACEDataService and remains read-only until explicit future administration phases introduce controlled write workflows.
 
-## Notes
-
-- ACE-facing Administration modules route database access through ACEDataService.
-- Mutation SQL is rejected by the read-only query guard.
-- Schema baseline is documented from the ACE initialization database dump.
-- Accounts, Characters, World, and Database pages are read-only explorers, not management editors.
+Project metadata is sourced from `dashboard/config/project.json` and rendered through `ProjectService` to prevent stale template defaults from de-versioning the dashboard.

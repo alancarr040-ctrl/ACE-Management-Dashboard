@@ -198,7 +198,7 @@
             {% for row in account_data.rows %}
                 <tr>
                     <td>{{ row.accountId }}</td>
-                    <td><strong>{{ row.accountName }}</strong></td>
+                    <td><strong><a href="/administration/accounts/{{ row.accountId }}#account-detail">{{ row.accountName }}</a></strong></td>
                     <td>{{ row.accessLevel }}{% if row.accessLevelName %} · {{ row.accessLevelName }}{% endif %}</td>
                     <td>{{ row.character_Count if row.character_Count is defined else '—' }}</td>
                     <td>{{ row.email_Address or '' }}</td>
@@ -214,6 +214,49 @@
         <p class="muted">No account rows available from the live ACE auth database.</p>
         {% endif %}
     </div>
+</section>
+{% endif %}
+
+
+{% if active_tab == 'account_detail' %}
+<section id="account-detail">
+    <div class="card health-hero ok">
+        <div><h2>Account Detail</h2><p>Read-only ACE account detail and linked character inventory.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    {% if account_detail.error %}<div class="card"><p class="yellow">{{ account_detail.error }}</p></div>{% endif %}
+    {% if account_detail.account %}
+    <div class="grid-2">
+        <div class="card">
+            <h3>{{ account_detail.account.accountName }}</h3>
+            <div class="property-row compact"><div class="property-label">Account ID</div><div class="property-value">{{ account_detail.account.accountId }}</div></div>
+            <div class="property-row compact"><div class="property-label">Access Level</div><div class="property-value">{{ account_detail.account.accessLevel }}{% if account_detail.account.accessLevelName %} · {{ account_detail.account.accessLevelName }}{% endif %}</div></div>
+            <div class="property-row compact"><div class="property-label">Email</div><div class="property-value">{{ account_detail.account.email_Address or '' }}</div></div>
+            <div class="property-row compact"><div class="property-label">Created</div><div class="property-value">{{ account_detail.account.create_Time or '' }}</div></div>
+            <div class="property-row compact"><div class="property-label">Last Login</div><div class="property-value">{{ account_detail.account.last_Login_Time or '' }}</div></div>
+            <div class="property-row compact"><div class="property-label">Total Logins</div><div class="property-value">{{ account_detail.account.total_Times_Logged_In }}</div></div>
+            <div class="property-row compact"><div class="property-label">Ban Status</div><div class="property-value">{% if account_detail.account.banned_Time %}<span class="red">Banned</span>{% else %}<span class="green">Clear</span>{% endif %}</div></div>
+            <p class="muted">Password hashes, salts, and mutation actions are intentionally not exposed.</p>
+        </div>
+        <div class="card">
+            <h3>Linked Characters</h3>
+            {% if account_detail.characters %}
+            <table class="data-table compact-table">
+                <thead><tr><th>ID</th><th>Name</th><th>WCID</th><th>Deleted</th><th>Logins</th></tr></thead>
+                <tbody>
+                {% for row in account_detail.characters %}
+                    <tr><td>{{ row.id }}</td><td><strong><a href="/administration/characters/{{ row.id }}#character-detail">{{ row.name }}</a></strong></td><td>{{ row.weenie_Class_Id or '' }}</td><td>{% if row.is_Deleted %}<span class="yellow">Yes</span>{% else %}<span class="green">No</span>{% endif %}</td><td>{{ row.total_Logins }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="muted">No characters are linked to this account.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card"><p class="muted">Account was not found.</p></div>
+    {% endif %}
 </section>
 {% endif %}
 
@@ -237,7 +280,7 @@
             {% for row in character_data.rows %}
                 <tr>
                     <td>{{ row.id }}</td>
-                    <td><strong>{{ row.name }}</strong></td>
+                    <td><strong><a href="/administration/characters/{{ row.id }}#character-detail">{{ row.name }}</a></strong></td>
                     <td>{{ row.account_Id }}{% if row.accountName %}<br><span class="muted">{{ row.accountName }}</span>{% endif %}</td>
                     <td>{{ row.weenie_Class_Id or '' }}</td>
                     <td>{{ row.weenie_Type or '' }}</td>
@@ -252,6 +295,55 @@
         <p class="muted">No character rows available from the live ACE shard database.</p>
         {% endif %}
     </div>
+</section>
+{% endif %}
+
+
+{% if active_tab == 'character_detail' %}
+<section id="character-detail">
+    <div class="card health-hero ok">
+        <div><h2>Character Detail</h2><p>Read-only shard character detail with representative ACE property rows.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    {% if character_detail.error %}<div class="card"><p class="yellow">{{ character_detail.error }}</p></div>{% endif %}
+    {% if character_detail.character %}
+    <div class="grid-2">
+        <div class="card">
+            <h3>{{ character_detail.character.name }}</h3>
+            <div class="property-row compact"><div class="property-label">Character ID</div><div class="property-value">{{ character_detail.character.id }}</div></div>
+            <div class="property-row compact"><div class="property-label">Account</div><div class="property-value"><a href="/administration/accounts/{{ character_detail.character.account_Id }}#account-detail">{{ character_detail.character.account_Id }}</a>{% if character_detail.character.accountName %} · {{ character_detail.character.accountName }}{% endif %}</div></div>
+            <div class="property-row compact"><div class="property-label">WCID</div><div class="property-value">{{ character_detail.character.weenie_Class_Id or '' }}</div></div>
+            <div class="property-row compact"><div class="property-label">Weenie Type</div><div class="property-value">{{ character_detail.character.weenie_Type or '' }}</div></div>
+            <div class="property-row compact"><div class="property-label">Deleted</div><div class="property-value">{% if character_detail.character.is_Deleted %}<span class="yellow">Yes</span>{% else %}<span class="green">No</span>{% endif %}</div></div>
+            <div class="property-row compact"><div class="property-label">Total Logins</div><div class="property-value">{{ character_detail.character.total_Logins }}</div></div>
+            <div class="property-row compact"><div class="property-label">Last Login Timestamp</div><div class="property-value">{{ character_detail.character.last_Login_Timestamp }}</div></div>
+        </div>
+        <div class="card">
+            <h3>Property Sets</h3>
+            <p class="muted">This explorer displays representative raw property rows so future administration modules can map ACE relationships safely.</p>
+            {% for name, rows in character_detail.properties.items() %}
+                <div class="property-row compact"><div class="property-label">{{ name|title }}</div><div class="property-value">{{ rows|length }} sampled</div></div>
+            {% endfor %}
+        </div>
+    </div>
+    {% for name, rows in character_detail.properties.items() %}
+    <div class="card">
+        <h3>{{ name|title }} Properties</h3>
+        {% if rows %}
+        <table class="data-table compact-table">
+            <thead><tr>{% for key in rows[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+            <tbody>
+            {% for row in rows %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No sampled rows.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card"><p class="muted">Character was not found.</p></div>
+    {% endif %}
 </section>
 {% endif %}
 
@@ -282,6 +374,44 @@
         <div><h2>Database</h2><p>ACE schema inventory and baseline discovery. This page is intentionally read-only.</p></div>
         <div class="health-status-pill ok">Read-only</div>
     </div>
+
+    {% if table_detail is defined %}
+    <div class="card" id="table-detail">
+        <div class="card-title-line"><h3>{{ table_detail.database }}.{{ table_detail.table }}</h3><a class="button" href="/administration/database#database">Back to Database</a></div>
+        {% if table_detail.error %}<p class="yellow">{{ table_detail.error }}</p>{% endif %}
+        <div class="grid-3">
+            <div class="card compact-card"><h3>Rows</h3><div class="metric-value">{{ table_detail.row_count if table_detail.row_count is not none else '—' }}</div><span class="muted">Live COUNT(*)</span></div>
+            <div class="card compact-card"><h3>Columns</h3><div class="metric-value">{{ table_detail.columns|length }}</div><span class="muted">Schema columns</span></div>
+            <div class="card compact-card"><h3>Indexes</h3><div class="metric-value">{{ table_detail.indexes|length }}</div><span class="muted">Index parts</span></div>
+        </div>
+        <h4>Columns</h4>
+        <div class="table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr><th>Name</th><th>Type</th><th>Nullable</th><th>Key</th><th>Default</th><th>Extra</th><th>Comment</th></tr></thead>
+                <tbody>{% for col in table_detail.columns %}<tr><td><strong>{{ col.column_name }}</strong></td><td>{{ col.column_type }}</td><td>{{ col.is_nullable }}</td><td>{{ col.column_key }}</td><td>{{ col.column_default }}</td><td>{{ col.extra }}</td><td>{{ col.column_comment }}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        <h4>Indexes</h4>
+        {% if table_detail.indexes %}
+        <div class="table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr><th>Name</th><th>Unique</th><th>Seq</th><th>Column</th><th>Type</th></tr></thead>
+                <tbody>{% for idx in table_detail.indexes %}<tr><td>{{ idx.index_name }}</td><td>{% if idx.non_unique %}No{% else %}Yes{% endif %}</td><td>{{ idx.seq_in_index }}</td><td>{{ idx.column_name }}</td><td>{{ idx.index_type }}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}<p class="muted">No index metadata available.</p>{% endif %}
+        <h4>Sample Rows</h4>
+        {% if table_detail.sample %}
+        <div class="table-scroll sample-table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr>{% for key in table_detail.sample[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+                <tbody>{% for row in table_detail.sample %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}<p class="muted">No sample rows available.</p>{% endif %}
+    </div>
+    {% endif %}
+
     {% for inventory in schema_inventory.inventories %}
     <div class="card">
         <h3>{{ inventory.profile }} — {{ inventory.database }}</h3>
@@ -292,7 +422,7 @@
             <tbody>
             {% for table in inventory.tables %}
                 <tr>
-                    <td><strong>{{ table.name or "Unknown" }}</strong>{% if table.core %} <span class="badge green">Core</span>{% endif %}</td>
+                    <td><strong><a href="/administration/database/{{ inventory.key }}/{{ table.name }}#table-detail">{{ table.name or "Unknown" }}</a></strong>{% if table.core %} <span class="badge green">Core</span>{% endif %}</td>
                     <td>{{ table.rows if table.rows is not none else '—' }}</td>
                     <td>{{ table.engine }}</td>
                     <td>{{ table.comment }}</td>

@@ -29,3 +29,40 @@
 
 /* Phase 2.9.1 Workspace & Navigation Framework */
 .primary-tabs{margin-bottom:6px}.workspace-tabs{border-bottom-color:#333;margin-bottom:18px}.workspace-tab{font-size:14px;padding:7px 12px;background:#252525}.workspace-tab.active{background:#343434}.workspace-tab.disabled{color:#aaa}.workspace-module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.workspace-module-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px;text-decoration:none}.workspace-module-card:hover{border-color:#777;background:#282828}.workspace-module-card.planned{opacity:.82}.workspace-module-card h3{font-size:18px;margin-bottom:8px}.workspace-module-card p{color:var(--muted);margin-bottom:0}@media(max-width:900px){.tab{margin-bottom:4px}.workspace-module-grid{grid-template-columns:1fr}}
+
+/* ACEMD 3.0.1 data explorer tables */
+.table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin: 8px 0 16px 0;
+}
+.table-scroll .data-table {
+    margin: 0;
+}
+.wide-table {
+    width: max-content;
+    min-width: 100%;
+}
+.wide-table th,
+.wide-table td {
+    white-space: nowrap;
+}
+.sample-table-scroll {
+    padding-bottom: 2px;
+}
+.sticky-first-column th:first-child,
+.sticky-first-column td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #222;
+    box-shadow: 1px 0 0 #444;
+}
+.sticky-first-column thead th:first-child {
+    z-index: 3;
+    background: #1b1b1b;
+}

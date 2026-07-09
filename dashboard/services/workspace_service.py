@@ -61,11 +61,11 @@ class WorkspaceService:
             "/administration#administration",
             "Future Phase 3 ACE administration modules and configuration surfaces.",
             (
-                WorkspaceItem("servers", "Servers", "/administration/servers#servers", "Read-only ACE database connection and server data foundation."),
-                WorkspaceItem("accounts", "Accounts", "/administration/accounts#accounts", "Read-only ACE account explorer and access level discovery."),
-                WorkspaceItem("characters", "Characters", "/administration/characters#characters", "Read-only shard character explorer."),
-                WorkspaceItem("world", "World", "/administration/world#world", "Read-only world content summary and safe counts."),
-                WorkspaceItem("database", "Database", "/administration/database#database", "ACE schema inventory and database discovery."),
+                WorkspaceItem("servers", "Servers", "/administration/servers#servers", "ACE connection and profile discovery."),
+                WorkspaceItem("accounts", "Accounts", "/administration/accounts#accounts", "Read-only account explorer."),
+                WorkspaceItem("characters", "Characters", "/administration/characters#characters", "Read-only character explorer."),
+                WorkspaceItem("world", "World", "/administration/world#world", "Read-only world data explorer."),
+                WorkspaceItem("database", "Database", "/administration/database#database", "Schema and table explorer."),
                 WorkspaceItem("configuration", "Configuration", "/administration#administration", "Planned platform configuration module.", "Planned"),
             ),
         ),
@@ -90,6 +90,7 @@ class WorkspaceService:
         for workspace in WORKSPACES
         for item in workspace.items
     }
+    MODULE_TO_WORKSPACE.update({"account_detail": "administration", "character_detail": "administration"})
 
     def get_navigation(self, active_tab: str) -> dict:
         active_workspace = self.get_workspace_for_tab(active_tab)

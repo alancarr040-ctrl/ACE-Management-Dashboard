@@ -224,6 +224,7 @@ class ACEDataService:
             baseline = self._baseline_for_database(profile.database)
             entry = {
                 "profile": profile.label,
+                "key": profile.key,
                 "database": profile.database,
                 "role": baseline.get("role", "ACE database"),
                 "status": "Unavailable",
@@ -324,6 +325,150 @@ class ACEDataService:
             result["error"] = self._safe_error(exc)
         return result
 
+
+    def get_account_detail(self, account_id: int) -> dict[str, Any]:
+        """Return one ACE account with linked characters, read-only."""
+        profile = self._profile("auth")
+        result = {"status": "Unavailable", "account": None, "characters": [], "error": ""}
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE auth database connection unavailable."
+            return result
+        try:
+            account_columns = self._table_columns(profile, "account")
+            optional_select = ",\n                       ".join([
+                self._optional_column_expr(account_columns, "a", "email_Address"),
+                self._optional_column_expr(account_columns, "a", "create_Time"),
+                self._optional_column_expr(account_columns, "a", "last_Login_Time"),
+                self._optional_column_expr(account_columns, "a", "total_Times_Logged_In", "0"),
+                self._optional_column_expr(account_columns, "a", "banned_Time"),
+                self._optional_column_expr(account_columns, "a", "ban_Expire_Time"),
+                self._optional_column_expr(account_columns, "a", "last_Login_IP"),
+                self._optional_column_expr(account_columns, "a", "last_Login_Timestamp"),
+            ])
+            rows = self._select(profile, f"""
+                SELECT a.accountId, a.accountName, a.accessLevel, al.name AS accessLevelName,
+                       {optional_select}
+                FROM account a
+                LEFT JOIN accesslevel al ON al.level = a.accessLevel
+                WHERE a.accountId = %s
+                LIMIT 1
+            """, (account_id,))
+            result["status"] = "Connected"
+            result["account"] = rows[0] if rows else None
+            shard_profile = self._profile("shard")
+            if result["account"] and self._can_connect(shard_profile):
+                result["characters"] = self._select(shard_profile, """
+                    SELECT c.id, c.name, c.is_Deleted, c.last_Login_Timestamp, c.total_Logins,
+                           b.weenie_Class_Id, b.weenie_Type
+                    FROM `character` c
+                    LEFT JOIN biota b ON b.id = c.id
+                    WHERE c.account_Id = %s
+                    ORDER BY c.name ASC
+                """, (account_id,))
+                for row in result["characters"]:
+                    row["is_Deleted"] = self._bit_bool(row.get("is_Deleted"))
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
+
+    def get_character_detail(self, character_id: int) -> dict[str, Any]:
+        """Return one shard character with representative read-only property rows."""
+        profile = self._profile("shard")
+        result = {"status": "Unavailable", "character": None, "properties": {}, "error": ""}
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE shard database connection unavailable."
+            return result
+        try:
+            auth_db = self._safe_identifier(self._profile("auth").database)
+            rows = self._select(profile, f"""
+                SELECT c.id, c.account_Id, a.accountName, c.name, c.is_Plussed, c.is_Deleted,
+                       c.last_Login_Timestamp, c.total_Logins, b.weenie_Class_Id, b.weenie_Type
+                FROM `character` c
+                LEFT JOIN biota b ON b.id = c.id
+                LEFT JOIN `{auth_db}`.`account` a ON a.accountId = c.account_Id
+                WHERE c.id = %s
+                LIMIT 1
+            """, (character_id,))
+            result["status"] = "Connected"
+            result["character"] = rows[0] if rows else None
+            if result["character"]:
+                result["character"]["is_Plussed"] = self._bit_bool(result["character"].get("is_Plussed"))
+                result["character"]["is_Deleted"] = self._bit_bool(result["character"].get("is_Deleted"))
+                for key, table, value_col in (
+                    ("ints", "biota_properties_int", "value"),
+                    ("strings", "biota_properties_string", "value"),
+                    ("floats", "biota_properties_float", "value"),
+                    ("bools", "biota_properties_bool", "value"),
+                    ("positions", "biota_properties_position", "obj_Cell_Id"),
+                    ("dids", "biota_properties_d_i_d", "value"),
+                    ("iids", "biota_properties_i_i_d", "value"),
+                ):
+                    if self._table_exists(profile, table):
+                        try:
+                            rows = self._select(profile, f"SELECT * FROM `{table}` WHERE object_Id = %s ORDER BY `type` ASC LIMIT 25", (character_id,))
+                            result["properties"][key] = rows
+                        except Exception:
+                            result["properties"][key] = []
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
+
+    def get_table_detail(self, database_key: str, table_name: str) -> dict[str, Any]:
+        """Return schema details for a single ACE table, read-only."""
+        profile = self._profile(database_key)
+        table_name = self._safe_identifier(table_name)
+        result = {"status": "Unavailable", "database_key": database_key, "database": profile.database, "table": table_name, "columns": [], "indexes": [], "sample": [], "row_count": None, "error": ""}
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE database connection unavailable."
+            return result
+        try:
+            if not self._table_exists(profile, table_name):
+                result["status"] = "Connected"
+                result["error"] = "Table was not found in the selected ACE database."
+                return result
+            result["status"] = "Connected"
+            column_rows = self._select(profile, """
+                SELECT column_name, column_type, is_nullable, column_key, column_default, extra, column_comment
+                FROM information_schema.columns
+                WHERE table_schema = %s AND table_name = %s
+                ORDER BY ordinal_position
+            """, (profile.database, table_name))
+            result["columns"] = [
+                {
+                    "column_name": self._row_value(row, "column_name", "COLUMN_NAME", default=""),
+                    "column_type": self._row_value(row, "column_type", "COLUMN_TYPE", default=""),
+                    "is_nullable": self._row_value(row, "is_nullable", "IS_NULLABLE", default=""),
+                    "column_key": self._row_value(row, "column_key", "COLUMN_KEY", default=""),
+                    "column_default": self._row_value(row, "column_default", "COLUMN_DEFAULT", default=""),
+                    "extra": self._row_value(row, "extra", "EXTRA", default=""),
+                    "column_comment": self._row_value(row, "column_comment", "COLUMN_COMMENT", default=""),
+                }
+                for row in column_rows
+            ]
+            index_rows = self._select(profile, """
+                SELECT index_name, non_unique, seq_in_index, column_name, index_type
+                FROM information_schema.statistics
+                WHERE table_schema = %s AND table_name = %s
+                ORDER BY index_name, seq_in_index
+            """, (profile.database, table_name))
+            result["indexes"] = [
+                {
+                    "index_name": self._row_value(row, "index_name", "INDEX_NAME", default=""),
+                    "non_unique": self._row_value(row, "non_unique", "NON_UNIQUE", default=0),
+                    "seq_in_index": self._row_value(row, "seq_in_index", "SEQ_IN_INDEX", default=""),
+                    "column_name": self._row_value(row, "column_name", "COLUMN_NAME", default=""),
+                    "index_type": self._row_value(row, "index_type", "INDEX_TYPE", default=""),
+                }
+                for row in index_rows
+            ]
+            count_rows = self._select(profile, f"SELECT COUNT(*) AS count_value FROM `{table_name}`", ())
+            result["row_count"] = int(count_rows[0].get("count_value") or 0) if count_rows else 0
+            sample_rows = self._select(profile, f"SELECT * FROM `{table_name}` LIMIT 10", ())
+            result["sample"] = [self._redact_sensitive_row(row) for row in sample_rows]
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
+
     def get_world_summary(self) -> dict[str, Any]:
         profile = self._profile("world")
         core_tables = ("weenie", "landblock_instance", "encounter", "quest", "recipe", "spell")
@@ -355,6 +500,17 @@ class ACEDataService:
             {"name": "Write actions", "status": "Disabled", "detail": "Mutation SQL is rejected by the ACE Data Service guard."},
         ]
 
+    @staticmethod
+    def _redact_sensitive_row(row: dict[str, Any]) -> dict[str, Any]:
+        sensitive_markers = ("password", "passwd", "pwd", "salt", "hash", "token", "secret")
+        clean: dict[str, Any] = {}
+        for key, value in row.items():
+            if any(marker in str(key).lower() for marker in sensitive_markers):
+                clean[key] = "[redacted]"
+            else:
+                clean[key] = value
+        return clean
+
     def _select(self, profile: ACEDatabaseProfile, sql: str, params: tuple[Any, ...]) -> list[dict[str, Any]]:
         self._guard_read_only(sql)
         with pymysql.connect(
@@ -382,6 +538,24 @@ class ACEDataService:
         for word in self.BLOCKED_SQL_WORDS:
             if f" {word} " in padded:
                 raise ValueError(f"Mutation keyword rejected by read-only guard: {word}")
+
+
+    def _table_columns(self, profile: ACEDatabaseProfile, table: str) -> set[str]:
+        """Return available column names for a table, normalized to lower-case."""
+        table = self._safe_identifier(table)
+        rows = self._select(profile, """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = %s AND table_name = %s
+        """, (profile.database, table))
+        return {str(self._row_value(row, "column_name", "COLUMN_NAME", default="")).lower() for row in rows}
+
+    @staticmethod
+    def _optional_column_expr(available_columns: set[str], alias: str, column: str, default: str = "NULL") -> str:
+        """Build a SELECT expression that tolerates ACE schema column differences."""
+        if column.lower() in available_columns:
+            return f"{alias}.`{column}` AS `{column}`"
+        return f"{default} AS `{column}`"
 
     def _table_exists(self, profile: ACEDatabaseProfile, table: str) -> bool:
         rows = self._select(profile, """
