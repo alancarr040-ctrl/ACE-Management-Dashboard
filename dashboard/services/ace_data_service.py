@@ -1,308 +1,439 @@
 from __future__ import annotations
 
 import os
-import re
+import socket
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    import pymysql
+    from pymysql.cursors import DictCursor
+except Exception:  # pragma: no cover - dependency may not exist in local lint sandbox
+    pymysql = None
+    DictCursor = None
+
 
 @dataclass(frozen=True)
-class ACEConnectionProfile:
-    name: str
+class ACEDatabaseProfile:
+    key: str
+    label: str
     database: str
     host: str
     port: int
     user: str
+    password: str
 
 
 class ACEDataService:
-    """Read-only gateway for ACE database information.
+    """Read-only gateway for ACE data.
 
-    Phase 3.0 establishes ACEMD's first safe ACE data access layer.  All ACE
-    database access for Administration modules should go through this service
-    rather than embedding SQL in routes or templates.
+    ACEMD pages must consume ACE data through this service rather than issuing
+    ad-hoc SQL. Phase 3.0.1 intentionally provides discovery and explorer
+    methods only. Mutation SQL is rejected by the query guard.
     """
 
-    READ_ONLY_PREFIXES = ("select", "show", "describe", "desc", "explain")
-    MUTATING_KEYWORDS = re.compile(
-        r"\b(insert|update|delete|replace|drop|alter|create|truncate|grant|revoke|set|call|load|outfile|dumpfile|lock|unlock)\b",
-        re.IGNORECASE,
+    DEFAULT_ENV_FILES = (
+        "/opt/acserver/.env",
+        "/opt/acserver/docker.env",
+        ".env",
+        "docker.env",
     )
 
-    def __init__(self, root_path: str | Path | None = None):
-        self.root_path = Path(root_path or os.environ.get("ACE_ROOT", "/opt/acserver")).resolve()
-        self.env = self._load_environment()
+    SAFE_SQL_PREFIXES = ("select", "show", "describe", "desc", "explain")
+    BLOCKED_SQL_WORDS = (
+        "insert", "update", "delete", "replace", "alter", "drop", "create",
+        "truncate", "rename", "grant", "revoke", "lock", "unlock", "set",
+        "call", "load", "outfile", "infile",
+    )
+
+    SCHEMA_BASELINE = {
+        "ace_auth": {
+            "label": "Auth",
+            "role": "Identity and game access levels",
+            "tables": ("accesslevel", "account"),
+            "known_core": ("account", "accesslevel"),
+        },
+        "ace_shard": {
+            "label": "Shard",
+            "role": "Runtime shard objects, characters, and dynamic properties",
+            "tables": (
+                "biota", "biota_properties_allegiance", "biota_properties_anim_part",
+                "biota_properties_attribute", "biota_properties_attribute_2nd",
+                "biota_properties_body_part", "biota_properties_book",
+                "biota_properties_book_page_data", "biota_properties_bool",
+                "biota_properties_create_list", "biota_properties_d_i_d",
+                "biota_properties_emote", "biota_properties_emote_action",
+                "biota_properties_enchantment_registry", "biota_properties_event_filter",
+                "biota_properties_float", "biota_properties_generator", "biota_properties_i_i_d",
+                "biota_properties_int", "biota_properties_int64", "biota_properties_palette",
+                "biota_properties_position", "biota_properties_skill", "biota_properties_spell_book",
+                "biota_properties_string", "biota_properties_texture_map", "character",
+                "character_properties_contract_registry", "character_properties_fill_comp_book",
+                "character_properties_friend_list", "character_properties_quest_registry",
+                "character_properties_shortcut_bar", "character_properties_spell_bar",
+                "character_properties_squelch", "character_properties_title_book",
+                "config_properties_boolean", "config_properties_double", "config_properties_long",
+                "config_properties_string", "house_permission",
+            ),
+            "known_core": ("character", "biota"),
+        },
+        "ace_world": {
+            "label": "World",
+            "role": "Static world content, weenies, encounters, quests, and recipes",
+            "tables": (
+                "cook_book", "encounter", "event", "house_portal", "landblock_instance",
+                "landblock_instance_link", "points_of_interest", "quest", "recipe", "recipe_mod",
+                "recipe_mods_bool", "recipe_mods_d_i_d", "recipe_mods_float", "recipe_mods_i_i_d",
+                "recipe_mods_int", "recipe_mods_string", "recipe_requirements_bool",
+                "recipe_requirements_d_i_d", "recipe_requirements_float", "recipe_requirements_i_i_d",
+                "recipe_requirements_int", "recipe_requirements_string", "spell", "treasure_death",
+                "treasure_gem_count", "treasure_material_base", "treasure_material_color",
+                "treasure_material_groups", "treasure_wielded", "version", "weenie",
+                "weenie_properties_anim_part", "weenie_properties_attribute",
+                "weenie_properties_attribute_2nd", "weenie_properties_body_part",
+                "weenie_properties_book", "weenie_properties_book_page_data",
+                "weenie_properties_bool", "weenie_properties_create_list", "weenie_properties_d_i_d",
+                "weenie_properties_emote", "weenie_properties_emote_action",
+                "weenie_properties_event_filter", "weenie_properties_float",
+                "weenie_properties_generator", "weenie_properties_i_i_d", "weenie_properties_int",
+                "weenie_properties_int64", "weenie_properties_palette", "weenie_properties_position",
+                "weenie_properties_skill", "weenie_properties_spell_book", "weenie_properties_string",
+                "weenie_properties_texture_map",
+            ),
+            "known_core": ("weenie", "landblock_instance", "quest", "encounter", "recipe"),
+        },
+    }
+
+    def __init__(self, env_files: tuple[str, ...] | None = None):
+        self.env_files = env_files or self.DEFAULT_ENV_FILES
+        self._env = self._load_env()
 
     def get_overview(self) -> dict[str, Any]:
         profiles = self.get_profiles()
-        results = [self.get_database_overview(profile.name) for profile in profiles]
-        connected = sum(1 for result in results if result["connected"])
-        total_tables = sum(result.get("table_count", 0) for result in results)
-        total_rows = sum(result.get("total_rows", 0) for result in results)
+        profile_reports = [self.get_profile_report(profile) for profile in profiles]
+        connected = sum(1 for p in profile_reports if p["status"] == "Connected")
+        tables = sum(p.get("table_count", 0) for p in profile_reports)
+        rows = sum(p.get("estimated_rows", 0) for p in profile_reports)
         return {
-            "configured": bool(profiles),
-            "driver": self._driver_status(),
-            "profiles": results,
+            "profiles": profile_reports,
             "summary": {
-                "profiles": len(profiles),
+                "profiles": len(profile_reports),
                 "connected": connected,
-                "tables": total_tables,
-                "rows": total_rows,
+                "tables": tables,
+                "rows": rows,
                 "mode": "Read-only",
+                "dependency": "PyMySQL" if pymysql else "PyMySQL missing",
             },
-            "enforcement": self.get_read_only_report(),
+            "capabilities": self.get_capabilities(),
         }
 
-    def get_profiles(self) -> list[ACEConnectionProfile]:
-        host = self._env("ACE_SQL_AUTH_DATABASE_HOST", "ACE_DB_HOST", "MYSQL_HOST", default="ace-db")
-        port = int(self._env("ACE_SQL_AUTH_DATABASE_PORT", "ACE_DB_PORT", "MYSQL_PORT", default="3306") or 3306)
-        user = self._env("MYSQL_USER", "ACE_DB_USER", "DB_USER", default="")
-        profiles = []
-        for key, label in (
-            ("ACE_SQL_AUTH_DATABASE_NAME", "Auth"),
-            ("ACE_SQL_SHARD_DATABASE_NAME", "Shard"),
-            ("ACE_SQL_WORLD_DATABASE_NAME", "World"),
-        ):
-            database = self._env(key, default="")
-            if database:
-                profiles.append(ACEConnectionProfile(label, database, host, port, user))
-        if not profiles:
-            database = self._env("MYSQL_DATABASE", "ACE_DB_NAME", "DB_NAME", default="")
-            if database and "%" not in database:
-                profiles.append(ACEConnectionProfile("ACE", database, host, port, user))
+    def get_profiles(self) -> list[ACEDatabaseProfile]:
+        host = self._env_value("ACE_SQL_DATABASE_HOST", "MYSQL_HOST", default="ace-db")
+        port = int(self._env_value("ACE_SQL_DATABASE_PORT", "MYSQL_PORT", default="3306") or 3306)
+        user = self._env_value("ACE_SQL_DATABASE_USER", "MYSQL_USER", default="")
+        password = self._env_value("ACE_SQL_DATABASE_PASSWORD", "MYSQL_PASSWORD", default="")
+        defaults = {
+            "auth": ("Auth", "ACE_SQL_AUTH_DATABASE_NAME", "ace_auth"),
+            "shard": ("Shard", "ACE_SQL_SHARD_DATABASE_NAME", "ace_shard"),
+            "world": ("World", "ACE_SQL_WORLD_DATABASE_NAME", "ace_world"),
+        }
+        profiles: list[ACEDatabaseProfile] = []
+        for key, (label, db_var, fallback_db) in defaults.items():
+            profiles.append(ACEDatabaseProfile(
+                key=key,
+                label=label,
+                database=self._env_value(db_var, default=fallback_db),
+                host=self._env_value(f"ACE_SQL_{key.upper()}_DATABASE_HOST", default=host),
+                port=int(self._env_value(f"ACE_SQL_{key.upper()}_DATABASE_PORT", default=str(port)) or port),
+                user=self._env_value(f"ACE_SQL_{key.upper()}_DATABASE_USER", default=user),
+                password=self._env_value(f"ACE_SQL_{key.upper()}_DATABASE_PASSWORD", default=password),
+            ))
         return profiles
 
-    def get_database_overview(self, profile_name: str) -> dict[str, Any]:
-        profile = self._find_profile(profile_name)
-        if not profile:
-            return {"name": profile_name, "connected": False, "error": "Profile is not configured."}
-        result = {
-            "name": profile.name,
+    @staticmethod
+    def _row_value(row: dict[str, Any], *keys: str, default: Any = None) -> Any:
+        """Return a dict value while tolerating MySQL driver key casing.
+
+        MariaDB/MySQL information_schema columns may be returned as either
+        table_name or TABLE_NAME depending on server and driver behavior. The
+        UI consumes normalized service keys only, so all normalization stays here.
+        """
+        for key in keys:
+            if key in row:
+                return row[key]
+            lower = key.lower()
+            upper = key.upper()
+            if lower in row:
+                return row[lower]
+            if upper in row:
+                return row[upper]
+        return default
+
+    @staticmethod
+    def _bit_bool(value: Any) -> bool:
+        if isinstance(value, (bytes, bytearray)):
+            return any(value)
+        return bool(value)
+
+    @staticmethod
+    def _safe_identifier(value: str) -> str:
+        allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+        if not value or any(ch not in allowed for ch in value):
+            raise ValueError("Unsafe ACE database identifier rejected.")
+        return value
+
+    def get_profile_report(self, profile: ACEDatabaseProfile) -> dict[str, Any]:
+        baseline = self._baseline_for_database(profile.database)
+        report = {
+            "key": profile.key,
+            "label": profile.label,
             "database": profile.database,
-            "host": profile.host,
-            "port": profile.port,
+            "host": f"{profile.host}:{profile.port}",
             "user": profile.user or "Not configured",
-            "connected": False,
-            "tables": [],
+            "status": "Unavailable",
+            "error": "",
             "table_count": 0,
-            "total_rows": 0,
-            "error": None,
+            "estimated_rows": 0,
+            "role": baseline.get("role", "ACE database"),
+            "baseline_tables": len(baseline.get("tables", ())),
         }
+        if not pymysql:
+            report["error"] = "PyMySQL dependency is not installed in the dashboard container."
+            return report
+        if not profile.user or not profile.password:
+            report["error"] = "Database user/password not found in environment."
+            return report
         try:
-            with self._connect(profile) as conn:
-                rows = self._query(conn, """
-                    SELECT table_name, table_rows, data_length, index_length
-                    FROM information_schema.tables
-                    WHERE table_schema = %s
-                    ORDER BY table_name
-                """, (profile.database,))
-                tables = [
-                    {
-                        "name": row["table_name"],
-                        "rows": int(row.get("table_rows") or 0),
-                        "data_bytes": int(row.get("data_length") or 0),
-                        "index_bytes": int(row.get("index_length") or 0),
-                    }
-                    for row in rows
-                ]
-                result.update({
-                    "connected": True,
-                    "tables": tables,
-                    "table_count": len(tables),
-                    "total_rows": sum(t["rows"] for t in tables),
-                })
-        except Exception as exc:  # pragma: no cover - depends on deployment DB
-            result["error"] = str(exc)
-        return result
+            rows = self._select(profile, """
+                SELECT table_name, table_rows
+                FROM information_schema.tables
+                WHERE table_schema = %s
+                ORDER BY table_name
+            """, (profile.database,))
+            report["status"] = "Connected"
+            report["table_count"] = len(rows)
+            report["estimated_rows"] = int(sum(int(self._row_value(r, "table_rows", "TABLE_ROWS", default=0) or 0) for r in rows))
+        except Exception as exc:
+            report["error"] = self._safe_error(exc)
+        return report
 
     def get_schema_inventory(self) -> dict[str, Any]:
-        overview = self.get_overview()
-        return {
-            "summary": overview["summary"],
-            "profiles": overview["profiles"],
-            "capabilities": self.get_capabilities(),
-            "enforcement": overview["enforcement"],
-        }
+        inventories = []
+        for profile in self.get_profiles():
+            baseline = self._baseline_for_database(profile.database)
+            entry = {
+                "profile": profile.label,
+                "database": profile.database,
+                "role": baseline.get("role", "ACE database"),
+                "status": "Unavailable",
+                "tables": [],
+                "error": "",
+            }
+            if pymysql and profile.user and profile.password:
+                try:
+                    rows = self._select(profile, """
+                        SELECT table_name, table_rows, engine, table_comment
+                        FROM information_schema.tables
+                        WHERE table_schema = %s
+                        ORDER BY table_name
+                    """, (profile.database,))
+                    entry["status"] = "Connected"
+                    entry["tables"] = [
+                        {
+                            "name": self._row_value(r, "table_name", "TABLE_NAME", default=""),
+                            "rows": int(self._row_value(r, "table_rows", "TABLE_ROWS", default=0) or 0),
+                            "engine": self._row_value(r, "engine", "ENGINE", default="") or "",
+                            "comment": self._row_value(r, "table_comment", "TABLE_COMMENT", default="") or "",
+                            "core": self._row_value(r, "table_name", "TABLE_NAME", default="") in baseline.get("known_core", ()),
+                        }
+                        for r in rows
+                    ]
+                except Exception as exc:
+                    entry["error"] = self._safe_error(exc)
+            else:
+                entry["tables"] = [
+                    {"name": t, "rows": None, "engine": "", "comment": "Known from baseline SQL dump", "core": t in baseline.get("known_core", ())}
+                    for t in baseline.get("tables", ())
+                ]
+                entry["error"] = "Using documented baseline; live connection unavailable."
+            inventories.append(entry)
+        return {"inventories": inventories}
 
-    def get_accounts(self, limit: int = 50, search: str = "") -> dict[str, Any]:
-        return self._get_entity_list(
-            "Auth",
-            ["account", "accounts", "ace_account"],
-            ["accountName", "account_name", "name", "username", "email", "id"],
-            limit,
-            search,
-            "accounts",
-        )
+    def get_accounts(self, search: str = "", limit: int = 50) -> dict[str, Any]:
+        profile = self._profile("auth")
+        result = {"status": "Unavailable", "rows": [], "error": "", "count": 0}
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE auth database connection unavailable."
+            return result
+        try:
+            where = ""
+            params: list[Any] = []
+            if search:
+                where = "WHERE a.accountName LIKE %s OR CAST(a.accountId AS CHAR) = %s"
+                params.extend([f"%{search}%", search])
+            shard_db = self._safe_identifier(self._profile("shard").database)
+            sql = f"""
+                SELECT a.accountId, a.accountName, a.accessLevel, al.name AS accessLevelName,
+                       a.email_Address, a.create_Time, a.last_Login_Time,
+                       a.total_Times_Logged_In, a.banned_Time, a.ban_Expire_Time,
+                       (SELECT COUNT(*) FROM `{shard_db}`.`character` c WHERE c.account_Id = a.accountId AND c.is_Deleted = 0) AS character_Count
+                FROM account a
+                LEFT JOIN accesslevel al ON al.level = a.accessLevel
+                {where}
+                ORDER BY a.accountId ASC
+                LIMIT %s
+            """
+            params.append(limit)
+            rows = self._select(profile, sql, tuple(params))
+            result.update({"status": "Connected", "rows": rows, "count": len(rows)})
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
 
-    def get_characters(self, limit: int = 50, search: str = "") -> dict[str, Any]:
-        return self._get_entity_list(
-            "Shard",
-            ["character", "characters", "biota"],
-            ["name", "characterName", "character_name", "id", "accountId", "account_id"],
-            limit,
-            search,
-            "characters",
-        )
+    def get_characters(self, search: str = "", limit: int = 50) -> dict[str, Any]:
+        profile = self._profile("shard")
+        result = {"status": "Unavailable", "rows": [], "error": "", "count": 0}
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE shard database connection unavailable."
+            return result
+        try:
+            where = ""
+            params: list[Any] = []
+            if search:
+                where = "WHERE c.name LIKE %s OR CAST(c.id AS CHAR) = %s OR CAST(c.account_Id AS CHAR) = %s"
+                params.extend([f"%{search}%", search, search])
+            auth_db = self._safe_identifier(self._profile("auth").database)
+            sql = f"""
+                SELECT c.id, c.account_Id, a.accountName, c.name, c.is_Plussed, c.is_Deleted,
+                       c.last_Login_Timestamp, c.total_Logins, b.weenie_Class_Id, b.weenie_Type
+                FROM `character` c
+                LEFT JOIN biota b ON b.id = c.id
+                LEFT JOIN `{auth_db}`.`account` a ON a.accountId = c.account_Id
+                {where}
+                ORDER BY c.name ASC
+                LIMIT %s
+            """
+            params.append(limit)
+            rows = self._select(profile, sql, tuple(params))
+            for row in rows:
+                row["is_Plussed"] = self._bit_bool(row.get("is_Plussed"))
+                row["is_Deleted"] = self._bit_bool(row.get("is_Deleted"))
+            result.update({"status": "Connected", "rows": rows, "count": len(rows)})
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
 
-    def get_world(self) -> dict[str, Any]:
-        profile = self._find_profile("World")
-        if not profile:
-            return {"connected": False, "error": "World profile is not configured.", "tables": [], "interesting": []}
-        overview = self.get_database_overview("World")
-        interesting_names = ("weenie", "landblock", "landblock_instance", "treasure", "recipe", "event", "encounter")
-        interesting = [t for t in overview.get("tables", []) if any(part in t["name"].lower() for part in interesting_names)]
-        return {**overview, "interesting": interesting[:25]}
-
-    def get_server_data(self) -> dict[str, Any]:
-        overview = self.get_overview()
-        return {
-            "connection": overview["summary"],
-            "profiles": overview["profiles"],
-            "capabilities": self.get_capabilities(),
-        }
+    def get_world_summary(self) -> dict[str, Any]:
+        profile = self._profile("world")
+        core_tables = ("weenie", "landblock_instance", "encounter", "quest", "recipe", "spell")
+        result = {"status": "Unavailable", "rows": [], "error": ""}
+        if not self._can_connect(profile):
+            baseline = self._baseline_for_database(profile.database)
+            result["rows"] = [{"table": t, "rows": None, "note": "Known baseline table"} for t in baseline.get("known_core", core_tables)]
+            result["error"] = "Using documented baseline; live ACE world connection unavailable."
+            return result
+        try:
+            rows = []
+            for table in core_tables:
+                if self._table_exists(profile, table):
+                    count = self._select(profile, f"SELECT COUNT(*) AS count_value FROM `{table}`", ())
+                    rows.append({"table": table, "rows": int(count[0].get("count_value") or 0), "note": "Live count"})
+            result.update({"status": "Connected", "rows": rows})
+        except Exception as exc:
+            result["error"] = self._safe_error(exc)
+        return result
 
     def get_capabilities(self) -> list[dict[str, str]]:
         return [
-            {"name": "Connection discovery", "status": "Active", "description": "Reads ACE database profile settings from environment or /opt/acserver/.env."},
-            {"name": "Schema inventory", "status": "Active", "description": "Uses information_schema to list databases, tables, columns, and estimated row counts."},
-            {"name": "Account discovery", "status": "Active", "description": "Safely detects likely account tables and displays read-only rows when available."},
-            {"name": "Character discovery", "status": "Active", "description": "Safely detects likely character tables and displays read-only rows when available."},
-            {"name": "Write actions", "status": "Disabled", "description": "3.0.0 intentionally rejects mutation SQL and exposes no edit actions."},
+            {"name": "Schema baseline", "status": "Active", "detail": "Documents the known ACE auth, shard, and world schema from the initialization dump."},
+            {"name": "Connection discovery", "status": "Active", "detail": "Reads ACE database settings from environment files without exposing secrets."},
+            {"name": "Live schema inventory", "status": "Active", "detail": "Uses information_schema through guarded read-only SELECT statements when available."},
+            {"name": "Account explorer", "status": "Read-only", "detail": "Lists account identity, access level, login metadata, and ban lifecycle fields."},
+            {"name": "Character explorer", "status": "Read-only", "detail": "Lists shard characters and their linked biota metadata without mutation actions."},
+            {"name": "World explorer", "status": "Read-only", "detail": "Summarizes core world tables and safe counts."},
+            {"name": "Write actions", "status": "Disabled", "detail": "Mutation SQL is rejected by the ACE Data Service guard."},
         ]
 
-    def get_read_only_report(self) -> dict[str, Any]:
-        return {
-            "mode": "Read-only",
-            "allowed": list(self.READ_ONLY_PREFIXES),
-            "blocked": ["INSERT", "UPDATE", "DELETE", "REPLACE", "DROP", "ALTER", "CREATE", "TRUNCATE", "GRANT", "REVOKE"],
-            "templates": "No SQL is executed from templates.",
-            "routes": "Administration routes consume ACEDataService only.",
-        }
-
-    def _get_entity_list(self, profile_name: str, table_candidates: list[str], search_columns: list[str], limit: int, search: str, entity: str) -> dict[str, Any]:
-        profile = self._find_profile(profile_name)
-        result = {"entity": entity, "connected": False, "profile": profile_name, "table": None, "columns": [], "rows": [], "total": 0, "search": search, "error": None}
-        if not profile:
-            result["error"] = f"{profile_name} profile is not configured."
-            return result
-        try:
-            with self._connect(profile) as conn:
-                result["connected"] = True
-                table = self._detect_table(conn, profile.database, table_candidates)
-                if not table:
-                    result["error"] = "No expected table was detected yet. Use the Database page to inspect the schema."
-                    return result
-                columns = self._get_columns(conn, profile.database, table)
-                result["table"] = table
-                result["columns"] = columns
-                selected_columns = columns[:10]
-                where = ""
-                params: list[Any] = []
-                searchable = [c for c in columns if c in search_columns]
-                if search and searchable:
-                    where = " WHERE " + " OR ".join(f"`{c}` LIKE %s" for c in searchable[:4])
-                    params = [f"%{search}%" for _ in searchable[:4]]
-                count_rows = self._query(conn, f"SELECT COUNT(*) AS row_count FROM `{profile.database}`.`{table}`{where}", tuple(params))
-                result["total"] = int(count_rows[0].get("row_count") or 0) if count_rows else 0
-                sql = f"SELECT {', '.join(f'`{c}`' for c in selected_columns)} FROM `{profile.database}`.`{table}`{where} LIMIT %s"
-                rows = self._query(conn, sql, tuple(params + [max(1, min(int(limit), 200))]))
-                result["rows"] = [{c: row.get(c) for c in selected_columns} for row in rows]
-        except Exception as exc:  # pragma: no cover - depends on deployment DB
-            result["error"] = str(exc)
-        return result
-
-    def _detect_table(self, conn: Any, database: str, candidates: list[str]) -> str | None:
-        rows = self._query(conn, "SELECT table_name FROM information_schema.tables WHERE table_schema = %s", (database,))
-        tables = [row["table_name"] for row in rows]
-        lower_map = {table.lower(): table for table in tables}
-        for candidate in candidates:
-            if candidate.lower() in lower_map:
-                return lower_map[candidate.lower()]
-        for table in tables:
-            table_lower = table.lower()
-            if any(candidate.lower() in table_lower for candidate in candidates):
-                return table
-        return None
-
-    def _get_columns(self, conn: Any, database: str, table: str) -> list[str]:
-        rows = self._query(conn, """
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema = %s AND table_name = %s
-            ORDER BY ordinal_position
-        """, (database, table))
-        return [row["column_name"] for row in rows]
-
-    def _find_profile(self, profile_name: str) -> ACEConnectionProfile | None:
-        profile_name = profile_name.lower()
-        for profile in self.get_profiles():
-            if profile.name.lower() == profile_name or profile.database.lower() == profile_name:
-                return profile
-        return None
-
-    def _connect(self, profile: ACEConnectionProfile):
-        try:
-            import pymysql
-        except Exception as exc:  # pragma: no cover - import depends on deployment image
-            raise RuntimeError("PyMySQL is not installed. Install dashboard requirements to enable ACE DB read-only access.") from exc
-        password = self._env("MYSQL_PASSWORD", "ACE_DB_PASSWORD", "DB_PASS", "DB_PASSWORD", default="")
-        return pymysql.connect(
+    def _select(self, profile: ACEDatabaseProfile, sql: str, params: tuple[Any, ...]) -> list[dict[str, Any]]:
+        self._guard_read_only(sql)
+        with pymysql.connect(
             host=profile.host,
             port=profile.port,
             user=profile.user,
-            password=password,
+            password=profile.password,
             database=profile.database,
             charset="utf8mb4",
-            cursorclass=pymysql.cursors.DictCursor,
-            read_timeout=5,
-            write_timeout=5,
-            connect_timeout=5,
+            cursorclass=DictCursor,
+            read_timeout=4,
+            write_timeout=4,
+            connect_timeout=4,
             autocommit=True,
-        )
+        ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(sql, params)
+                return list(cursor.fetchall())
 
-    def _query(self, conn: Any, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
-        self._assert_read_only(sql)
-        with conn.cursor() as cursor:
-            cursor.execute(sql, params)
-            return list(cursor.fetchall())
+    def _guard_read_only(self, sql: str) -> None:
+        normalized = " ".join(sql.strip().lower().split())
+        if not normalized.startswith(self.SAFE_SQL_PREFIXES):
+            raise ValueError("ACE Data Service permits read-only SQL only.")
+        padded = f" {normalized} "
+        for word in self.BLOCKED_SQL_WORDS:
+            if f" {word} " in padded:
+                raise ValueError(f"Mutation keyword rejected by read-only guard: {word}")
 
-    def _assert_read_only(self, sql: str) -> None:
-        cleaned = sql.strip().lower()
-        if ";" in cleaned.rstrip(";"):
-            raise ValueError("Multiple SQL statements are not allowed.")
-        if not cleaned.startswith(self.READ_ONLY_PREFIXES):
-            raise ValueError("Only read-only SQL statements are allowed.")
-        if self.MUTATING_KEYWORDS.search(cleaned):
-            raise ValueError("Mutation SQL is blocked by ACEDataService read-only enforcement.")
+    def _table_exists(self, profile: ACEDatabaseProfile, table: str) -> bool:
+        rows = self._select(profile, """
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = %s AND table_name = %s
+            LIMIT 1
+        """, (profile.database, table))
+        return bool(rows)
 
-    def _load_environment(self) -> dict[str, str]:
-        env = dict(os.environ)
-        for path in (self.root_path / ".env", Path.cwd() / ".env"):
-            if path.exists():
-                env.update(self._parse_env_file(path))
-        return env
+    def _can_connect(self, profile: ACEDatabaseProfile) -> bool:
+        return bool(pymysql and profile.user and profile.password)
 
-    def _parse_env_file(self, path: Path) -> dict[str, str]:
-        values: dict[str, str] = {}
-        for raw_line in path.read_text(errors="ignore").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            values[key.strip()] = value.strip().strip('"').strip("'")
-        return values
+    def _profile(self, key: str) -> ACEDatabaseProfile:
+        for profile in self.get_profiles():
+            if profile.key == key:
+                return profile
+        raise KeyError(key)
 
-    def _env(self, *keys: str, default: str = "") -> str:
+    def _baseline_for_database(self, database: str) -> dict[str, Any]:
+        return self.SCHEMA_BASELINE.get(database, {"tables": (), "known_core": (), "role": "ACE database"})
+
+    def _env_value(self, *keys: str, default: str = "") -> str:
         for key in keys:
-            value = self.env.get(key)
-            if value not in (None, ""):
-                return str(value)
+            value = os.environ.get(key)
+            if value:
+                return value
+            value = self._env.get(key)
+            if value:
+                return value
         return default
 
-    def _driver_status(self) -> dict[str, str]:
-        try:
-            import pymysql  # noqa: F401
-            return {"name": "PyMySQL", "status": "Available"}
-        except Exception:
-            return {"name": "PyMySQL", "status": "Missing"}
+    def _load_env(self) -> dict[str, str]:
+        env: dict[str, str] = {}
+        for env_file in self.env_files:
+            path = Path(env_file)
+            if not path.exists():
+                continue
+            try:
+                for raw in path.read_text(errors="ignore").splitlines():
+                    line = raw.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    env[key.strip()] = value.strip().strip('"').strip("'")
+            except OSError:
+                continue
+        return env
+
+    def _safe_error(self, exc: Exception) -> str:
+        text = str(exc)
+        for profile in self.get_profiles():
+            if profile.password:
+                text = text.replace(profile.password, "********")
+        return text[:500]

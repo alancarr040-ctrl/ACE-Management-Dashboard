@@ -125,7 +125,185 @@
 </section>
 {% endif %}
 
-{% include "components/ace_data.html" %}
+
+{% if active_tab == 'servers' %}
+<section id="servers">
+    <div class="card health-hero ok">
+        <div>
+            <h2>Servers</h2>
+            <p>Phase 3 read-only ACE Data Service access. These pages inspect ACE data without exposing edit or mutation actions.</p>
+            <p class="muted">All ACE database reads are routed through ACEDataService.</p>
+        </div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+
+    <div class="grid-4">
+        <div class="card compact-card"><h3>Profiles</h3><div class="metric-value">{{ ace_overview.summary.profiles }}</div><span class="muted">Configured ACE databases</span></div>
+        <div class="card compact-card"><h3>Connected</h3><div class="metric-value {% if ace_overview.summary.connected %}green{% else %}yellow{% endif %}">{{ ace_overview.summary.connected }}</div><span class="muted">Successful DB connections</span></div>
+        <div class="card compact-card"><h3>Tables</h3><div class="metric-value">{{ ace_overview.summary.tables }}</div><span class="muted">Live discovered tables</span></div>
+        <div class="card compact-card"><h3>Mode</h3><div class="metric-value green">{{ ace_overview.summary.mode }}</div><span class="muted">Mutation actions disabled</span></div>
+    </div>
+
+    <div class="card">
+        <h3>ACE Database Profiles</h3>
+        <table class="data-table compact-table">
+            <thead><tr><th>Profile</th><th>Database</th><th>Role</th><th>Host</th><th>User</th><th>Status</th><th>Tables</th><th>Rows</th></tr></thead>
+            <tbody>
+            {% for profile in ace_overview.profiles %}
+                <tr>
+                    <td><strong>{{ profile.label }}</strong></td>
+                    <td>{{ profile.database }}</td>
+                    <td>{{ profile.role }}</td>
+                    <td>{{ profile.host }}</td>
+                    <td>{{ profile.user }}</td>
+                    <td><span class="{% if profile.status == 'Connected' %}green{% else %}red{% endif %}">{{ profile.status }}</span>{% if profile.error %}<br><span class="muted">{{ profile.error }}</span>{% endif %}</td>
+                    <td>{{ profile.table_count }}{% if profile.baseline_tables %}<br><span class="muted">Baseline: {{ profile.baseline_tables }}</span>{% endif %}</td>
+                    <td>{{ profile.estimated_rows }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Read-only Capabilities</h3>
+        <table class="data-table compact-table">
+            <tbody>
+            {% for item in ace_overview.capabilities %}
+                <tr><td><strong>{{ item.name }}</strong></td><td><span class="badge {% if item.status == 'Disabled' %}gray{% elif item.status == 'Read-only' %}green{% else %}green{% endif %}">{{ item.status }}</span></td><td>{{ item.detail }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'accounts' %}
+<section id="accounts">
+    <div class="card health-hero ok">
+        <div><h2>Accounts</h2><p>Read-only ACE account explorer. Password hashes and salts are intentionally never displayed.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    <form class="filter-bar" method="get" action="/administration/accounts">
+        <label>Search account<input type="text" name="q" value="{{ search_query }}" placeholder="name or id"></label>
+        <button class="button" type="submit">Search</button>
+    </form>
+    <div class="card">
+        <h3>Account Results</h3>
+        {% if account_data.error %}<p class="yellow">{{ account_data.error }}</p>{% endif %}
+        {% if account_data.rows %}
+        <table class="data-table compact-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Access</th><th>Characters</th><th>Email</th><th>Created</th><th>Last Login</th><th>Logins</th><th>Ban Status</th></tr></thead>
+            <tbody>
+            {% for row in account_data.rows %}
+                <tr>
+                    <td>{{ row.accountId }}</td>
+                    <td><strong>{{ row.accountName }}</strong></td>
+                    <td>{{ row.accessLevel }}{% if row.accessLevelName %} · {{ row.accessLevelName }}{% endif %}</td>
+                    <td>{{ row.character_Count if row.character_Count is defined else '—' }}</td>
+                    <td>{{ row.email_Address or '' }}</td>
+                    <td>{{ row.create_Time or '' }}</td>
+                    <td>{{ row.last_Login_Time or '' }}</td>
+                    <td>{{ row.total_Times_Logged_In }}</td>
+                    <td>{% if row.banned_Time %}<span class="red">Banned</span>{% else %}<span class="green">Clear</span>{% endif %}{% if row.ban_Expire_Time %}<br><span class="muted">Expires: {{ row.ban_Expire_Time }}</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No account rows available from the live ACE auth database.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'characters' %}
+<section id="characters">
+    <div class="card health-hero ok">
+        <div><h2>Characters</h2><p>Read-only shard character explorer. Character rows are linked to biota metadata when available.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    <form class="filter-bar" method="get" action="/administration/characters">
+        <label>Search character<input type="text" name="q" value="{{ search_query }}" placeholder="name, id, or account id"></label>
+        <button class="button" type="submit">Search</button>
+    </form>
+    <div class="card">
+        <h3>Character Results</h3>
+        {% if character_data.error %}<p class="yellow">{{ character_data.error }}</p>{% endif %}
+        {% if character_data.rows %}
+        <table class="data-table compact-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Account</th><th>WCID</th><th>Type</th><th>Deleted</th><th>Total Logins</th><th>Last Login Timestamp</th></tr></thead>
+            <tbody>
+            {% for row in character_data.rows %}
+                <tr>
+                    <td>{{ row.id }}</td>
+                    <td><strong>{{ row.name }}</strong></td>
+                    <td>{{ row.account_Id }}{% if row.accountName %}<br><span class="muted">{{ row.accountName }}</span>{% endif %}</td>
+                    <td>{{ row.weenie_Class_Id or '' }}</td>
+                    <td>{{ row.weenie_Type or '' }}</td>
+                    <td>{% if row.is_Deleted %}<span class="yellow">Yes</span>{% else %}<span class="green">No</span>{% endif %}</td>
+                    <td>{{ row.total_Logins }}</td>
+                    <td>{{ row.last_Login_Timestamp }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No character rows available from the live ACE shard database.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'world' %}
+<section id="world">
+    <div class="card health-hero ok">
+        <div><h2>World</h2><p>Read-only world data summary for core ACE world tables.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    <div class="card">
+        <h3>World Summary</h3>
+        {% if world_data.error %}<p class="yellow">{{ world_data.error }}</p>{% endif %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Table</th><th>Rows</th><th>Note</th></tr></thead>
+            <tbody>
+            {% for row in world_data.rows %}
+                <tr><td><strong>{{ row.table }}</strong></td><td>{{ row.rows if row.rows is not none else 'Baseline only' }}</td><td>{{ row.note }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'database' %}
+<section id="database">
+    <div class="card health-hero ok">
+        <div><h2>Database</h2><p>ACE schema inventory and baseline discovery. This page is intentionally read-only.</p></div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+    {% for inventory in schema_inventory.inventories %}
+    <div class="card">
+        <h3>{{ inventory.profile }} — {{ inventory.database }}</h3>
+        <p class="muted">{{ inventory.role }}</p>
+        {% if inventory.error %}<p class="yellow">{{ inventory.error }}</p>{% endif %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Table</th><th>Rows</th><th>Engine</th><th>Comment</th></tr></thead>
+            <tbody>
+            {% for table in inventory.tables %}
+                <tr>
+                    <td><strong>{{ table.name or "Unknown" }}</strong>{% if table.core %} <span class="badge green">Core</span>{% endif %}</td>
+                    <td>{{ table.rows if table.rows is not none else '—' }}</td>
+                    <td>{{ table.engine }}</td>
+                    <td>{{ table.comment }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
 
 {% if active_tab == 'health' %}
 <section id="health" data-auto-refresh="30">

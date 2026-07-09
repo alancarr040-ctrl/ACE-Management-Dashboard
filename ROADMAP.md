@@ -46,8 +46,8 @@ The current 2.x phases establish the platform layer. Beginning with the 3.x seri
 | 2.7.2 | Automation Framework & UI Polish | Complete | Job registry foundation, shared time formatting, and UI consistency. |
 | 2.8.0 | Metrics & Resource Monitoring | Complete | CPU, memory, disk, network, and container resource views. |
 | 2.9.0 | Notifications & Alerts | Complete | Notification service, alert lifecycle, and local/dashboard operator alerts. |
-| 2.9.1 | Workspace & Navigation Framework | Current Development | Compact workspace navigation before Phase 3 administration modules. |
-| 3.0.0 | ACE Data Integration Foundation | Planned | Safe read-only access patterns for ACE account, character, and world data. |
+| 2.9.1 | Workspace & Navigation Framework | Complete | Compact workspace navigation before Phase 3 administration modules. |
+| 3.0.1 | ACE Schema Discovery | Current Development | Safe read-only ACE schema discovery and explorer foundation. |
 | 3.1.0 | Account Management | Planned | View and manage ACE accounts through ACEMD. |
 | 3.2.0 | Character Management | Planned | View and manage ACE characters through ACEMD. |
 | 3.3.0 | Online Player Management | Planned | Session visibility, online player status, and operator tools. |

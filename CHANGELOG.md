@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.1a - ACE Schema Discovery Polish
+
+- Fixed live schema inventory table-name rendering across MySQL/MariaDB information_schema key casing.
+- Added account character counts to the read-only Account Explorer.
+- Added linked account names to the read-only Character Explorer when available.
+- Normalized ACE BIT fields before template rendering so deleted/plussed flags display correctly.
+- Preserved read-only ACE Data Service enforcement and mutation guard.
+
+## 3.0.1 - ACE Schema Discovery
+
+- Added ACEDataService as the read-only gateway for ACE database access.
+- Added Administration explorer routes for Servers, Accounts, Characters, World, and Database.
+- Added ACE schema baseline for auth, shard, and world databases based on the initialization dump.
+- Added guarded SQL read-only enforcement for ACE data queries.
+- Added PyMySQL dependency for live ACE MySQL inspection.
+- Added ACE schema discovery and read-only pattern documentation.
+
 ## 2.9.1 - Workspace & Navigation Framework
 
 - Added Workspace Service as the shared navigation model.
