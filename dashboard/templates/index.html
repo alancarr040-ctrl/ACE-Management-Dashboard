@@ -331,12 +331,14 @@
     <div class="card">
         <h3>{{ name|title }} Properties</h3>
         {% if rows %}
-        <table class="data-table compact-table">
-            <thead><tr>{% for key in rows[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
-            <tbody>
-            {% for row in rows %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll sample-table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr>{% for key in rows[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+                <tbody>
+                {% for row in rows %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <p class="muted">No sampled rows.</p>
         {% endif %}
@@ -541,19 +543,21 @@
         <h3>{{ inventory.profile }} — {{ inventory.database }}</h3>
         <p class="muted">{{ inventory.role }}</p>
         {% if inventory.error %}<p class="yellow">{{ inventory.error }}</p>{% endif %}
-        <table class="data-table compact-table">
-            <thead><tr><th>Table</th><th>Rows</th><th>Engine</th><th>Comment</th></tr></thead>
-            <tbody>
-            {% for table in inventory.tables %}
-                <tr>
-                    <td><strong><a href="/administration/database/{{ inventory.key }}/{{ table.name }}#table-detail">{{ table.name or "Unknown" }}</a></strong>{% if table.core %} <span class="badge green">Core</span>{% endif %}</td>
-                    <td>{{ table.rows if table.rows is not none else '—' }}</td>
-                    <td>{{ table.engine }}</td>
-                    <td>{{ table.comment }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr><th>Table</th><th>Rows</th><th>Engine</th><th>Comment</th></tr></thead>
+                <tbody>
+                {% for table in inventory.tables %}
+                    <tr>
+                        <td><strong><a href="/administration/database/{{ inventory.key }}/{{ table.name }}#table-detail">{{ table.name or "Unknown" }}</a></strong>{% if table.core %} <span class="badge green">Core</span>{% endif %}</td>
+                        <td>{{ table.rows if table.rows is not none else '—' }}</td>
+                        <td>{{ table.engine }}</td>
+                        <td>{{ table.comment }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endfor %}
 </section>
@@ -1445,6 +1449,7 @@
 <div class="property-row"><div class="property-label">Status</div><div class="property-value">{{ project.status }}</div></div>
 <div class="property-row"><div class="property-label">Build</div><div class="property-value">{{ project.build }}</div></div>
 <div class="property-row"><div class="property-label">Python</div><div class="property-value">{{ project.python }}</div></div>
+<div class="property-row"><div class="property-label">Metadata Source</div><div class="property-value muted">{{ project.metadata_source }}</div></div>
 </div></section>
 {% endif %}
 </body>

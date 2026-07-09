@@ -1,7 +1,20 @@
 # Current Release Notes
 
-## 3.0.0 - Read-Only ACE Data Foundation
+## ACEMD 3.0.3 - Foundation Polish
 
-Phase 3.0.0 introduces ACEMD's ACE Data Service and read-only Administration pages for Servers, Accounts, Characters, World, and Database discovery.
+ACEMD 3.0.3 stabilizes the Phase 3.0 ACE Discovery Framework before Account Management begins.
 
-No SQL migration is required.
+### Included
+
+- Centralized Project Metadata Service.
+- JSON-first project metadata loading from `dashboard/config/project.json`.
+- Legacy flat-file metadata fallback support.
+- Header/About metadata consistency.
+- Wide table containment polish for ACE discovery views.
+- Phase 3 discovery framework documentation.
+
+### Not included
+
+- No ACE database writes.
+- No SQL migration.
+- No account or character mutation actions.

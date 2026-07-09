@@ -1,8 +1,9 @@
 {
   "product": "ACE Management Dashboard",
-  "version": "3.0.2-dev",
-  "phase": "3 - ACE Data Foundation",
-  "milestone": "3.0.2 - ACE Relationship Explorer",
+  "short_name": "ACEMD",
+  "version": "3.0.3-dev",
+  "phase": "3 - ACE Discovery Framework",
+  "milestone": "3.0.3 - Foundation Polish",
   "status": "Development",
-  "build": "2026.07.09-302"
+  "build": "2026.07.09-303"
 }

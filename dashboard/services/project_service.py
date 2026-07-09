@@ -10,19 +10,36 @@ from typing import Dict, Iterable
 class ProjectService:
     """Central project metadata provider.
 
-    Project/version information is rendered in the shared Project Information
-    card on every page.  Keeping it in one JSON file prevents stale template or
-    service defaults from accidentally "de-versioning" the dashboard during
-    changed-file package overlays.
+    ACEMD renders project identity, version, phase, milestone, status, and
+    build information in the shared header and About page.  Those values must
+    come from one metadata source so changed-file package overlays cannot
+    accidentally reintroduce stale template or service defaults.
+
+    Primary source:
+        dashboard/config/project.json
+
+    Compatibility fallbacks:
+        dashboard/VERSION, dashboard/PHASE, dashboard/MILESTONE,
+        dashboard/STATUS, dashboard/BUILD
     """
 
     DEFAULTS: Dict[str, str] = {
         "product": "ACE Management Dashboard",
+        "short_name": "ACEMD",
         "version": "unknown",
         "phase": "unknown",
         "milestone": "unknown",
         "status": "Development",
         "build": "unknown",
+        "metadata_source": "defaults",
+    }
+
+    LEGACY_FILES = {
+        "version": "VERSION",
+        "phase": "PHASE",
+        "milestone": "MILESTONE",
+        "status": "STATUS",
+        "build": "BUILD",
     }
 
     def __init__(self, project_file: str | Path | None = None):
@@ -48,22 +65,54 @@ class ProjectService:
         yield dashboard_root / "PROJECT.json"
         yield repo_root / "config" / "project.json"
 
+    def _dashboard_root(self) -> Path:
+        return Path(__file__).resolve().parents[1]
+
     def _read_json_metadata(self, path: Path) -> Dict[str, str]:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
             return {}
-        return {str(key): str(value) for key, value in raw.items() if value is not None}
+        data = {str(key): str(value) for key, value in raw.items() if value is not None}
+        data["metadata_source"] = str(path)
+        return data
+
+    def _read_legacy_metadata(self) -> Dict[str, str]:
+        """Read legacy flat metadata files only when JSON metadata is absent.
+
+        These files are retained because older packages already used them, but
+        the JSON metadata file is the certified source of truth for Phase 3.0.3
+        and later.
+        """
+        root = self._dashboard_root()
+        data: Dict[str, str] = {}
+        for key, filename in self.LEGACY_FILES.items():
+            path = root / filename
+            try:
+                if path.exists() and path.is_file():
+                    value = path.read_text(encoding="utf-8").strip()
+                    if value:
+                        data[key] = value
+            except OSError:
+                continue
+        if data:
+            data["metadata_source"] = str(root)
+        return data
 
     def get_info(self) -> Dict[str, str]:
         data = dict(self.DEFAULTS)
 
+        loaded = False
         for path in self._candidate_files():
             try:
                 if path.exists() and path.is_file():
                     data.update(self._read_json_metadata(path))
+                    loaded = True
                     break
             except (OSError, json.JSONDecodeError, ValueError):
                 continue
+
+        if not loaded:
+            data.update(self._read_legacy_metadata())
 
         data["python"] = platform.python_version()
         return data
