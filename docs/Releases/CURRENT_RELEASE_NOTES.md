@@ -1,10 +1,11 @@
 # Current Release Notes
 
-## 2.8.0 - Metrics & Resource Monitoring
+## 2.9.0 - Notifications & Alerts
 
-Phase 2.8.0 introduces the ACEMD Metrics Service, Metrics workspace, metrics API, resource threshold checks, Docker/container resource metrics, system resource metrics, database container metrics, and Metrics Snapshot automation job.
+Phase 2.9.0 introduces the ACEMD Notification Service, Notifications workspace, active alert summary, notification lifecycle actions, and local/dashboard notification delivery.
 
-See:
+Events remain the operational journal. Notifications are operator-facing attention items derived from Health, Metrics, Automation, and critical Events.
 
-- `docs/Releases/2.8.0/README.md`
-- `dashboard/docs/RELEASE-NOTES-2.8.0.md`
+External notification channels are represented as deferred channel framework entries and are not enabled in this release.
+
+No SQL migration is required.

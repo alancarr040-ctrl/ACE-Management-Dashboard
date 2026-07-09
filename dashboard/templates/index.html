@@ -483,6 +483,124 @@
 </script>
 {% endif %}
 
+
+{% if active_tab == 'notifications' %}
+<section id="notifications" data-auto-refresh="30">
+    <div class="card health-hero {{ notifications.overall.level }}">
+        <div>
+            <h2>Notifications & Alerts</h2>
+            <p>{{ notifications.overall.message }}</p>
+            <span class="muted">Local/dashboard notification center · Auto-refresh: 30 seconds</span>
+        </div>
+        <div class="health-status-pill {{ notifications.overall.level }}">{{ notifications.overall.label }}</div>
+    </div>
+
+    <div class="grid-4 health-metrics">
+        <div class="card compact-card"><h3>Active</h3><div class="metric-value {% if notifications.summary.active %}yellow{% else %}green{% endif %}">{{ notifications.summary.active }}</div><span class="muted">Operator attention items</span></div>
+        <div class="card compact-card"><h3>Critical</h3><div class="metric-value red">{{ notifications.summary.critical }}</div><span class="muted">Immediate review</span></div>
+        <div class="card compact-card"><h3>Warnings</h3><div class="metric-value yellow">{{ notifications.summary.warning }}</div><span class="muted">Needs review</span></div>
+        <div class="card compact-card"><h3>Resolved</h3><div class="metric-value green">{{ notifications.summary.resolved }}</div><span class="muted">Historical lifecycle</span></div>
+    </div>
+
+    <div class="card">
+        <div class="card-title-line">
+            <h3>Active Alerts</h3>
+            <span class="muted">Events are the journal. Notifications are operator-facing attention items.</span>
+        </div>
+        {% if notifications.active %}
+        <div class="notification-list">
+            {% for notice in notifications.active %}
+            <div class="notification-row {{ notice.severity }}">
+                <div class="notification-main">
+                    <div class="card-title-line">
+                        <strong>{{ notice.title }}</strong>
+                        <span class="badge {{ notice.badge_class }}">{{ notice.severity|title }}</span>
+                    </div>
+                    <p>{{ notice.message }}</p>
+                    <span class="muted">{{ notice.source|title }} · {{ notice.entity }} · Updated {{ notice.updated_display.relative }}</span><br>
+                    <span class="muted">{{ notice.updated_display.absolute }}</span>
+                </div>
+                <div class="notification-actions">
+                    <span class="badge {{ notice.state_badge }}">{{ notice.state|title }}</span>
+                    <form method="post" action="/notifications/acknowledge#notifications">
+                        <input type="hidden" name="notification_id" value="{{ notice.id }}">
+                        <button class="button" type="submit">Acknowledge</button>
+                    </form>
+                    <form method="post" action="/notifications/resolve#notifications">
+                        <input type="hidden" name="notification_id" value="{{ notice.id }}">
+                        <button class="button" type="submit">Resolve</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="green">No active notifications.</p>
+        {% endif %}
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Notification Channels</h3>
+            <table class="data-table compact-table">
+                <thead><tr><th>Channel</th><th>Status</th><th>Detail</th></tr></thead>
+                <tbody>
+                {% for channel in notifications.channels %}
+                    <tr>
+                        <td><strong>{{ channel.name }}</strong><br><span class="muted">{{ channel.id }}</span></td>
+                        <td><span class="badge {{ 'green' if channel.enabled else 'gray' }}">{{ channel.status }}</span></td>
+                        <td>{{ channel.detail }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Alert Rules</h3>
+            <table class="data-table compact-table">
+                <thead><tr><th>Source</th><th>Rule</th><th>Detail</th></tr></thead>
+                <tbody>
+                {% for rule in notifications.rules %}
+                    <tr><td>{{ rule.source }}</td><td><strong>{{ rule.name }}</strong></td><td>{{ rule.detail }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Notification History</h3>
+        {% if notifications.history %}
+        <table class="data-table compact-table notification-table">
+            <thead><tr><th>Updated</th><th>State</th><th>Severity</th><th>Source</th><th>Notification</th><th>Entity</th></tr></thead>
+            <tbody>
+            {% for notice in notifications.history[:50] %}
+                <tr>
+                    <td><strong>{{ notice.updated_display.relative }}</strong><br><span class="muted">{{ notice.updated_display.absolute }}</span></td>
+                    <td><span class="badge {{ notice.state_badge }}">{{ notice.state|title }}</span></td>
+                    <td><span class="badge {{ notice.badge_class }}">{{ notice.severity|title }}</span></td>
+                    <td>{{ notice.source|title }}</td>
+                    <td><strong>{{ notice.title }}</strong><br><span class="muted">{{ notice.message }}</span></td>
+                    <td>{{ notice.entity }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No notification history yet. Alerts are created when monitored conditions require operator attention.</p>
+        {% endif %}
+    </div>
+</section>
+<script>
+(function(){
+  var notifications = document.getElementById('notifications');
+  if (!notifications) return;
+  var seconds = parseInt(notifications.getAttribute('data-auto-refresh') || '30', 10);
+  if (seconds > 0) window.setTimeout(function(){ window.location.reload(); }, seconds * 1000);
+})();
+</script>
+{% endif %}
+
 {% if active_tab == 'docker' %}
 <section id="docker">
     <h2>Docker Management</h2>

@@ -8,5 +8,6 @@
     <a class="tab {% if active_tab == 'events' %}active{% endif %}" href="/events#events">Events</a>
     <a class="tab {% if active_tab == 'automation' %}active{% endif %}" href="/automation#automation">Automation</a>
     <a class="tab {% if active_tab == 'metrics' %}active{% endif %}" href="/metrics#metrics">Metrics</a>
+    <a class="tab {% if active_tab == 'notifications' %}active{% endif %}" href="/notifications#notifications">Notifications{% if notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
     <a class="tab {% if active_tab == 'about' %}active{% endif %}" href="/about#about">About</a>
 </nav>

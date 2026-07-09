@@ -12,6 +12,7 @@ from services.event_service import EventService
 from services.automation_service import AutomationService
 from services.automation_jobs import AutomationJob
 from services.metrics_service import MetricsService
+from services.notification_service import NotificationService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -23,6 +24,7 @@ event_service = EventService()
 automation_service = AutomationService(health_service, backup_service, system_service, management_service, event_service)
 metrics_service = MetricsService(docker_service, system_service, backup_service, management_service, event_service)
 metrics_service.bind_automation(automation_service)
+notification_service = NotificationService(health_service, metrics_service, automation_service, event_service)
 
 
 def _run_metrics_snapshot():
@@ -68,5 +70,6 @@ def common_context(active_tab: str, message: dict | None = None):
         "disk": system_service.get_disk_usage(),
         "ace_status": ace_status_service.get_status(),
         "log_sources": ace_log_service.get_sources(),
+        "notification_summary": notification_service.get_center(refresh=False)["summary"],
         "message": message,
     }

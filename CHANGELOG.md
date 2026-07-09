@@ -1,3 +1,15 @@
+# Changelog
+
+## 2.9.0 - Notifications & Alerts
+
+- Added shared Notification Service.
+- Added Notifications workspace, API, and navigation alert badge.
+- Added local/dashboard notification delivery.
+- Added alert lifecycle actions for acknowledge and resolve.
+- Added Health, Metrics, Automation, and critical Event alert rules.
+- Added notification channel registry for future outbound delivery providers.
+- Added notification architecture and release documentation.
+
 # ACE Management Dashboard Changelog
 
 This changelog summarizes certified project milestones. Detailed release notes remain available in the per-package release documentation under `docs/Releases/`.

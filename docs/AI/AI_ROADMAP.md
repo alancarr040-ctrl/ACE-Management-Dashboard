@@ -24,8 +24,8 @@ Future packages must update this document when architecture, phase order, subsys
 | 2.7.0 | Scheduler & Automation | Complete |
 | 2.7.1 | Repository & Documentation Reorganization | Complete |
 | 2.7.2 | Automation Framework & UI Polish | Current Development |
-| 2.8.0 | Metrics & Resource Monitoring | Planned |
-| 2.9.0 | Notifications & Alerts | Planned |
+| 2.8.0 | Metrics & Resource Monitoring | Complete |
+| 2.9.0 | Notifications & Alerts | Current Development |
 | 3.0.0 | ACE Data Integration Foundation | Planned |
 | 3.1.0 | Account Management | Planned |
 | 3.2.0 | Character Management | Planned |
@@ -86,3 +86,8 @@ The 4.x track is reserved for advanced features after the platform and administr
 ## Phase 2.8.0 - Metrics & Resource Monitoring
 
 Phase 2.8.0 introduces the shared ACEMD Metrics Service, Metrics workspace, metrics API, threshold checks, Docker/container resource metrics, system resource metrics, database container metrics, and the Metrics Snapshot automation job. Metrics remain read-only and compact. Full alert delivery is reserved for Phase 2.9.0.
+
+
+## Phase 2.9.0 - Notifications & Alerts
+
+Phase 2.9.0 introduces the shared ACEMD Notification Service, Notifications workspace, alert lifecycle actions, local/dashboard delivery, and alert rules based on Health, Metrics, Automation, and critical Events. External channels are framework placeholders only in this phase.
