@@ -1,26 +1,41 @@
 # Changelog
 
-## 3.1.1 - ACE Knowledge Base Foundation
+## 3.1.2.1 — Research Lab Persistence Correction
 
-### Added
+- Moved Research Lab evidence to persistent host-mounted storage.
+- Added mandatory storage configuration and writability validation.
+- Added atomic JSON writes and visible Evidence Storage status.
+- Added Research Lab evidence to runtime infrastructure backups.
+- Added backup preflight validation for required runtime paths.
+- Made documentation and non-runtime project files optional backup content.
+- Added exact included/missing path reporting to backup manifests.
+- Added a read-only `/docs/` route for project documentation.
 
-- Added read-only ACE Knowledge Base module under Administration.
-- Added initial property dictionary seed entries for observed character string properties.
-- Added confidence/provenance model for raw ACE property interpretation.
-- Added controlled observation plan for discovering property meanings through before/after tests.
-- Added route `/administration/knowledge`.
-- Added Administration workspace navigation entry for Knowledge.
+- Runs the dashboard as the configured deployment-owner UID/GID instead of root.
+- Adds Docker socket supplemental-group configuration.
+- Adds owner-safe persistent-data initialization helper.
+- Preserves an existing Research Lab marker instead of rewriting it at startup.
+- Expands runtime backup coverage to the complete persistent `data/` tree.
 
-### Fixed
+## 3.1.2.1 Finalization
 
-- Fixed Account Management summary card access for the `clear` count so Jinja does not resolve Python's dictionary `clear` method.
+- automated deployment UID, GID, and Docker socket GID detection;
+- removed hard-coded Compose identity fallbacks;
+- formalized `/opt/acserver/data/` as ACEMD's permanent storage root;
+- added reserved persistent subsystem directories;
+- mounted the complete persistent data root at `/app/data`;
+- made owner preparation idempotent with permission and Compose validation;
+- aligned runtime backup required and optional path policy;
+- recorded included and skipped optional files in backup manifests;
+- hardened the read-only documentation browser against traversal and unsafe filenames;
+- expanded deployment and certification documentation.
 
-### Changed
+## 3.1.2.1 Release Candidate
 
-- Updated project metadata to 3.1.1-dev.
-- Updated package documentation for the new semantic translation layer.
-
-### Notes
-
-- No write operations were added.
-- No SQL migration is required.
+- automatically elevates owner preparation when inherited root-owned files require repair;
+- repairs and validates ownership for both `/opt/acserver/data` and `/opt/acserver/backups/runtime`;
+- preserves `/opt/acserver/backups/runtime` as a compatibility location for current Automation and Notifications state;
+- restores `.env` ownership to the detected deployment UID:GID after atomic updates;
+- validates writable paths using the deployment identity rather than root;
+- adds regression checks for Dashboard, Operations, Management, Docker, Automation, and Notifications;
+- confirms the release package contains no source `Test/` content.

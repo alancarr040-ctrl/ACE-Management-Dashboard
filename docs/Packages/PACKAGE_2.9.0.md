@@ -4,7 +4,7 @@
 
 Introduce ACEMD notification and alert infrastructure so operators can be informed when health state changes, automation jobs fail, metrics cross thresholds, backups become stale, or other important events occur.
 
-## Implemented Scope
+## Planned Scope
 
 - Notification service foundation.
 - Notification dashboard/workspace.
@@ -13,15 +13,17 @@ Introduce ACEMD notification and alert infrastructure so operators can be inform
 - Notification history.
 - Severity model for info, warning, critical, and recovery events.
 - Initial delivery abstraction for future email, Discord, Slack, and webhook integrations.
-- Notification lifecycle events written to the existing Event Service.
 
 ## Constraints
 
-- No external notifications are sent in this release.
-- Notification rules use existing ACEMD services.
-- The dashboard remains compact; detail lives on the Notifications page.
-- Events remain the journal; Notifications are operator-facing attention items.
+- Do not send external notifications until delivery configuration and safety rules are documented.
+- Keep alert rules compact and operator-readable.
+- Use existing ACEMD services instead of duplicating health, event, automation, or metric logic.
+- Maintain the distinction between Events as the journal and Notifications as operator-facing attention items.
 
-## SQL
+## Documentation Requirements
 
-No SQL migration required.
+- Update `ROADMAP.md` and `docs/AI/AI_ROADMAP.md`.
+- Add notification architecture documentation.
+- Add release notes and package README.
+- Define how future ACE administration modules should publish notification-worthy events.

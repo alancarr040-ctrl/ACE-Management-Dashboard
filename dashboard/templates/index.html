@@ -593,6 +593,155 @@
 </section>
 {% endif %}
 
+
+{% if active_tab == 'research' %}
+<section id="research">
+    <div class="card health-hero ok">
+        <div>
+            <h2>ACE Research Lab</h2>
+            <p>Read-only character snapshot and observation tracker for learning what ACE properties mean.</p>
+            <p class="muted">ACE data is only read. Snapshots and observations are stored as local ACEMD JSON evidence.</p>
+        </div>
+        <div class="health-status-pill ok">Evidence Store</div>
+    </div>
+
+    {% if message %}<div class="card"><p class="{% if message.level == 'ok' %}green{% else %}yellow{% endif %}">{{ message.text }}</p></div>{% endif %}
+
+    <div class="grid-3">
+        <div class="card compact-card"><h3>Snapshots</h3><div class="metric-value">{{ research_lab.summary.snapshots }}</div><span class="muted">Stored character states</span></div>
+        <div class="card compact-card"><h3>Observations</h3><div class="metric-value">{{ research_lab.summary.observations }}</div><span class="muted">Before/after comparisons</span></div>
+        <div class="card compact-card"><h3>Evidence Storage</h3><div class="metric-value {% if research_lab.summary.storage_status.writable %}green{% else %}yellow{% endif %}">{{ research_lab.summary.storage_status.label }}</div><span class="muted">{{ research_lab.summary.storage_status.path }}</span></div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Create Character Snapshot</h3>
+            <form method="post" action="/administration/research#research">
+                <input type="hidden" name="action" value="snapshot">
+                <label>Character
+                    <select name="character_id" required>
+                        {% for row in character_data.rows %}
+                            <option value="{{ row.id }}">{{ row.name }} · {{ row.id }}{% if row.accountName %} · {{ row.accountName }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Snapshot Label<input type="text" name="label" placeholder="OBS-0001 Level 5 unspent baseline"></label>
+                <label>Expected State<input type="text" name="expected_state" placeholder="Level 5, 11,045 XP, 4 skill credits, no XP spent"></label>
+                <label>Notes<textarea name="notes" rows="4" placeholder="What is known about this state?"></textarea></label>
+                <div class="actions"><button class="button primary" type="submit">Create Snapshot</button></div>
+            </form>
+        </div>
+        <div class="card">
+            <h3>Create Observation</h3>
+            <form method="post" action="/administration/research#research">
+                <input type="hidden" name="action" value="observation">
+                <label>Title<input type="text" name="title" placeholder="Tutorial Dungeon Level 1 to 5"></label>
+                <label>Before Snapshot
+                    <select name="before_snapshot_id" required>
+                        {% for snap in research_lab.snapshots %}<option value="{{ snap.snapshot_id }}">{{ snap.created_at }} · {{ snap.label }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>After Snapshot
+                    <select name="after_snapshot_id" required>
+                        {% for snap in research_lab.snapshots %}<option value="{{ snap.snapshot_id }}">{{ snap.created_at }} · {{ snap.label }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Action Notes<textarea name="action_notes" rows="3" placeholder="Completed combat, wasp, bellows, and olthoi tutorial quests. No XP spent."></textarea></label>
+                <label>Outcome Notes<textarea name="outcome_notes" rows="3" placeholder="Ended Level 5 with 11,045 XP and 4 skill credits."></textarea></label>
+                <div class="actions"><button class="button primary" type="submit">Create Observation</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Recent Snapshots</h3>
+        {% if research_lab.snapshots %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Created</th><th>Label</th><th>Character</th><th>Rows</th><th>Expected State</th><th>Notes</th></tr></thead>
+            <tbody>
+            {% for snap in research_lab.snapshots %}
+                <tr>
+                    <td>{{ snap.created_at }}</td>
+                    <td><strong>{{ snap.label }}</strong><br><span class="muted"><code>{{ snap.snapshot_id }}</code></span></td>
+                    <td>{{ snap.character_name or snap.character_id }}{% if snap.account_name %}<br><span class="muted">{{ snap.account_name }}</span>{% endif %}</td>
+                    <td>{{ snap.row_count }}<br><span class="muted">{{ snap.table_count }} tables</span></td>
+                    <td>{{ snap.expected_state }}</td>
+                    <td>{{ snap.notes }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="muted">No snapshots have been created yet.</p>{% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Observation Sessions</h3>
+        {% if research_lab.observations %}
+        <table class="data-table compact-table">
+            <thead><tr><th>ID</th><th>Title</th><th>Character</th><th>Diff Summary</th><th>Notes</th><th>Open</th></tr></thead>
+            <tbody>
+            {% for obs in research_lab.observations %}
+                <tr>
+                    <td><strong>{{ obs.observation_id }}</strong><br><span class="muted">{{ obs.created_at }}</span></td>
+                    <td>{{ obs.title }}</td>
+                    <td>{{ obs.character_name or obs.character_id }}</td>
+                    <td>{{ obs.diff_summary.tables_changed }} tables<br><span class="muted">{{ obs.diff_summary.rows_changed }} changed, {{ obs.diff_summary.rows_added }} added, {{ obs.diff_summary.rows_removed }} removed</span></td>
+                    <td>{{ obs.action_notes }}</td>
+                    <td><a class="button" href="/administration/research/observations/{{ obs.observation_id }}#observation-detail">View Diff</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="muted">No observations yet. Create two snapshots for the same character, then create an observation.</p>{% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if active_tab == 'observation_detail' %}
+<section id="observation-detail">
+    <div class="card health-hero ok">
+        <div><h2>Observation Detail</h2><p>Stored before/after ACE character diff with tester notes.</p></div>
+        <div class="health-status-pill ok">Local Evidence</div>
+    </div>
+    {% if observation_detail %}
+    <div class="grid-3">
+        <div class="card compact-card"><h3>Observation</h3><div class="metric-value">{{ observation_detail.observation_id }}</div><span class="muted">{{ observation_detail.title }}</span></div>
+        <div class="card compact-card"><h3>Tables Changed</h3><div class="metric-value">{{ observation_detail.diff_summary.tables_changed }}</div><span class="muted">Character {{ observation_detail.character_name }}</span></div>
+        <div class="card compact-card"><h3>Rows Changed</h3><div class="metric-value">{{ observation_detail.diff_summary.rows_changed }}</div><span class="muted">{{ observation_detail.diff_summary.rows_added }} added · {{ observation_detail.diff_summary.rows_removed }} removed</span></div>
+    </div>
+    <div class="grid-2">
+        <div class="card"><h3>Action Notes</h3><p>{{ observation_detail.action_notes or '—' }}</p></div>
+        <div class="card"><h3>Outcome Notes</h3><p>{{ observation_detail.outcome_notes or '—' }}</p></div>
+    </div>
+    {% for group in observation_detail.diff.groups %}
+    <div class="card">
+        <h3>{{ group.table }}</h3>
+        <p class="muted">{{ group.changed|length }} changed · {{ group.added|length }} added · {{ group.removed|length }} removed</p>
+        {% if group.changed %}
+        <table class="data-table compact-table">
+            <thead><tr><th>Row Key</th><th>Changed Columns</th></tr></thead>
+            <tbody>
+            {% for row in group.changed %}
+                <tr>
+                    <td><code>{{ row.key }}</code></td>
+                    <td>
+                        {% for change in row.changes %}
+                            <div><strong>{{ change.column }}</strong>: <code>{{ change.before }}</code> → <code>{{ change.after }}</code></div>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if group.added %}<p class="green">{{ group.added|length }} rows added.</p>{% endif %}
+        {% if group.removed %}<p class="yellow">{{ group.removed|length }} rows removed.</p>{% endif %}
+    </div>
+    {% endfor %}
+    {% else %}<div class="card"><p class="yellow">Observation was not found.</p></div>{% endif %}
+</section>
+{% endif %}
+
 {% if active_tab == 'world' %}
 <section id="world">
     <div class="card health-hero ok">

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, redirect, render_template, request
 
-from routes.context import common_context, ace_data_service
+from routes.context import common_context, ace_data_service, research_service
 
 administration_bp = Blueprint("administration", __name__)
 
@@ -54,6 +54,43 @@ def world_page():
 def knowledge_page():
     ctx = _ctx("knowledge")
     ctx["knowledge_base"] = ace_data_service.get_ace_knowledge_base()
+    return render_template("index.html", **ctx)
+
+
+@administration_bp.route("/administration/research", methods=["GET", "POST"])
+def research_page():
+    message = None
+    if request.method == "POST":
+        action = request.form.get("action", "", type=str)
+        if action == "snapshot":
+            character_id = request.form.get("character_id", 0, type=int)
+            result = research_service.create_snapshot(
+                character_id=character_id,
+                label=request.form.get("label", "", type=str),
+                notes=request.form.get("notes", "", type=str),
+                expected_state=request.form.get("expected_state", "", type=str),
+            )
+            message = {"level": "ok" if result.get("ok") else "warning", "text": result.get("error") or "Character snapshot created."}
+        elif action == "observation":
+            result = research_service.create_observation(
+                title=request.form.get("title", "", type=str),
+                before_snapshot_id=request.form.get("before_snapshot_id", "", type=str),
+                after_snapshot_id=request.form.get("after_snapshot_id", "", type=str),
+                action_notes=request.form.get("action_notes", "", type=str),
+                outcome_notes=request.form.get("outcome_notes", "", type=str),
+            )
+            message = {"level": "ok" if result.get("ok") else "warning", "text": result.get("error") or f"Observation {result.get('observation', {}).get('observation_id', '')} created."}
+    ctx = _ctx("research")
+    ctx["message"] = message
+    ctx["research_lab"] = research_service.get_dashboard()
+    ctx["character_data"] = ace_data_service.get_characters(limit=200)
+    return render_template("index.html", **ctx)
+
+
+@administration_bp.route("/administration/research/observations/<observation_id>")
+def observation_detail_page(observation_id: str):
+    ctx = _ctx("observation_detail")
+    ctx["observation_detail"] = research_service.get_observation(observation_id)
     return render_template("index.html", **ctx)
 
 

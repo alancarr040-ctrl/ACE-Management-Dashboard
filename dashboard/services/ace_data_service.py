@@ -677,6 +677,89 @@ class ACEDataService:
             result["errors"].append(f"World relationship summary unavailable: {self._safe_error(exc)}")
         return result
 
+
+    def get_character_snapshot(self, character_id: int) -> dict[str, Any]:
+        """Return a full read-only ACE-side character snapshot for Research Lab observations.
+
+        Snapshots intentionally capture raw ACE rows without interpreting them. The
+        Research Lab stores the returned document in ACEMD local JSON so testers can
+        compare before/after states and build evidence for semantic mappings.
+        """
+        profile = self._profile("shard")
+        result: dict[str, Any] = {
+            "character_id": int(character_id),
+            "character": None,
+            "tables": {},
+            "errors": [],
+            "source": "ACEDataService.get_character_snapshot",
+        }
+        if not self._can_connect(profile):
+            result["error"] = "Live ACE shard database connection unavailable."
+            return result
+        character_rows = self._select(profile, """
+            SELECT c.*, a.accountName
+            FROM `character` c
+            LEFT JOIN `ace_auth`.`account` a ON a.accountId = c.account_Id
+            WHERE c.id = %s
+            LIMIT 1
+        """, (int(character_id),))
+        result["character"] = self._redact_sensitive_row(character_rows[0]) if character_rows else None
+        if not character_rows:
+            result["error"] = "Character was not found."
+            return result
+
+        snapshot_tables = (
+            "character",
+            "biota",
+            "biota_properties_allegiance",
+            "biota_properties_anim_part",
+            "biota_properties_attribute",
+            "biota_properties_attribute_2nd",
+            "biota_properties_body_part",
+            "biota_properties_book",
+            "biota_properties_book_page_data",
+            "biota_properties_bool",
+            "biota_properties_create_list",
+            "biota_properties_d_i_d",
+            "biota_properties_emote",
+            "biota_properties_emote_action",
+            "biota_properties_enchantment_registry",
+            "biota_properties_event_filter",
+            "biota_properties_float",
+            "biota_properties_generator",
+            "biota_properties_i_i_d",
+            "biota_properties_int",
+            "biota_properties_int64",
+            "biota_properties_palette",
+            "biota_properties_position",
+            "biota_properties_skill",
+            "biota_properties_spell_book",
+            "biota_properties_string",
+            "biota_properties_texture_map",
+            "character_properties_contract_registry",
+            "character_properties_fill_comp_book",
+            "character_properties_friend_list",
+            "character_properties_quest_registry",
+            "character_properties_shortcut_bar",
+            "character_properties_spell_bar",
+            "character_properties_squelch",
+            "character_properties_title_book",
+        )
+        for table in snapshot_tables:
+            try:
+                if not self._table_exists(profile, table):
+                    continue
+                if table == "character":
+                    rows = self._select(profile, "SELECT * FROM `character` WHERE id = %s LIMIT 1", (int(character_id),))
+                elif table == "biota":
+                    rows = self._select(profile, "SELECT * FROM `biota` WHERE id = %s LIMIT 1", (int(character_id),))
+                else:
+                    rows = self._select_object_rows(profile, table, int(character_id), limit=10000)
+                result["tables"][table] = [self._redact_sensitive_row(dict(row)) for row in rows]
+            except Exception as exc:
+                result["errors"].append({"table": table, "error": self._safe_error(exc)})
+        return result
+
     def get_character_relationships(self, character_id: int) -> dict[str, Any]:
         """Return a relationship-aware read-only view of a character object."""
         detail = self.get_character_detail(character_id)

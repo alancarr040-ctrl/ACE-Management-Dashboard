@@ -1,0 +1,18 @@
+# Development convenience override for ACE Management Dashboard.
+#
+# Use this while iterating on dashboard Python/templates so most edits do not
+# require rebuilding the image. Restarting the container is enough for normal
+# Python/template changes:
+#
+#   docker compose restart ace-dashboard
+#
+# Keep using a rebuild when requirements.txt or Dockerfile changes:
+#
+#   docker compose up -d --build ace-dashboard
+#
+services:
+  ace-dashboard:
+    volumes:
+      - ./dashboard:/app
+      - ./backups:/opt/acserver/backups:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw

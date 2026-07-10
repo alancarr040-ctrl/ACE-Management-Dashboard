@@ -1,0 +1,10 @@
+{
+  "sources": [
+    "https://asheron.fandom.com/wiki/INT",
+    "https://asheron.fandom.com/wiki/BOOL",
+    "https://asheron.fandom.com/wiki/FLOAT",
+    "https://asheron.fandom.com/wiki/STRING",
+    "https://asheron.fandom.com/wiki/ITEM_TYPE_INT",
+    "https://asheron.fandom.com/wiki/CREATURE_TYPE_INT"
+  ]
+}

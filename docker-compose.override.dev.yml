@@ -12,7 +12,15 @@
 #
 services:
   ace-dashboard:
+    user: "${ACEMD_UID}:${ACEMD_GID}"
+    group_add:
+      - "${ACEMD_DOCKER_GID}"
+    environment:
+      - ACEMD_RESEARCH_ROOT=/app/data/research_lab
+      - ACEMD_DATA_ROOT=/app/data
+      - ACEMD_DOCS_ROOT=/opt/acserver/docs
     volumes:
+      - ./data:/app/data:rw
       - ./dashboard:/app
       - ./backups:/opt/acserver/backups:rw
       - /var/run/docker.sock:/var/run/docker.sock:rw

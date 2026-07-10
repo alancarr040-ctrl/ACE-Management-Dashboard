@@ -1,9 +1,9 @@
 {
   "product": "ACE Management Dashboard",
   "short_name": "ACEMD",
-  "version": "3.1.1-dev",
-  "phase": "3 - Administration Foundation",
-  "milestone": "3.1.1 - ACE Knowledge Base",
+  "version": "3.1.2.1",
+  "phase": "Phase 3.1.2.1 - Research Lab Persistence Correction",
+  "milestone": "Research Lab Persistence Correction",
   "status": "Development",
-  "build": "2026.07.09-311"
+  "build": "3.1.2.1-test"
 }

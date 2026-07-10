@@ -1,9 +1,16 @@
 services:
   ace-dashboard:
+    user: "${ACEMD_UID}:${ACEMD_GID}"
+    group_add:
+      - "${ACEMD_DOCKER_GID}"
+    environment:
+      - FLASK_ENV=development
+      - ACEMD_RESEARCH_ROOT=/app/data/research_lab
+      - ACEMD_DATA_ROOT=/app/data
+      - ACEMD_DOCS_ROOT=/opt/acserver/docs
     volumes:
+      - ./data:/app/data:rw
       - ./dashboard:/app
       - ./backups:/opt/acserver/backups:rw
       - ./scripts:/opt/acserver/scripts:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - FLASK_ENV=development
