@@ -1,21 +1,34 @@
 # Release 3.1.2.1 — Research Lab Persistence Correction
 
-This release finalizes the corrective persistence package for long-term Research Lab use.
+**Status:** Release Candidate — certification in progress
 
-Documents:
+This corrective release establishes production-safe persistent Research Lab storage and the deployment ownership, backup, and documentation behavior required to support it long term.
 
-- `RELEASE_NOTES.md` — finalized behavior and scope;
-- `OWNER_STORAGE.md` — deployment identity and permanent storage procedure;
-- `TEST_PLAN.md` — certification test sequence.
+## Release records
 
-Deployment sequence:
+- [`RELEASE_NOTES.md`](RELEASE_NOTES.md) — delivered behavior and scope.
+- [`TEST_PLAN.md`](TEST_PLAN.md) — repeatable certification sequence.
+- [`CERTIFICATION.md`](CERTIFICATION.md) — executed test results and release status.
+- [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) — deferred and compatibility items.
+- [`OWNER_STORAGE.md`](OWNER_STORAGE.md) — deployment identity and persistent-storage procedure.
+- [`../../Packages/PACKAGE_3.1.2.1.md`](../../Packages/PACKAGE_3.1.2.1.md) — original package objective and acceptance criteria.
+
+## Deployment
 
 ```bash
 cd /opt/acserver
-./scripts/prepare-dashboard-owner.sh /opt/acserver
+sudo bash ./scripts/prepare-dashboard-owner.sh /opt/acserver
 docker compose up -d --build --force-recreate ace-dashboard
 ```
 
-After deployment, these documents are available through the read-only browser at `/docs/Releases/3.1.2.1/`.
+The explicit `bash` invocation is intentional because Windows extraction and FTP/SCP upload workflows may strip Unix executable permissions.
 
-The release candidate additionally repairs the legacy writable runtime-state tree used by Automation and Notifications and validates that `.env` remains owned by the deployment account.
+After deployment, the release documentation is available through the read-only browser at:
+
+```text
+http://SERVER:8080/docs/Releases/3.1.2.1/
+```
+
+## Scope boundary
+
+Automation and Notifications continue using their legacy writable state beneath `backups/runtime/` in this release. Their migration into the canonical `data/` root is deferred to a future storage-registry package.

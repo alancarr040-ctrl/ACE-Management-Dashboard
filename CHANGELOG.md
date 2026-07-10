@@ -30,6 +30,16 @@
 - hardened the read-only documentation browser against traversal and unsafe filenames;
 - expanded deployment and certification documentation.
 
+## 3.1.2.1 Documentation Cleanup
+
+- restored the repository root `README.md` as the public project overview;
+- formalized package specifications under `docs/Packages/`;
+- formalized release records under `docs/Releases/<version>/`;
+- added 3.1.2.1 certification and known-issues records;
+- moved release-package details out of the repository root;
+- documented Windows extraction and FTP/SCP executable-permission behavior;
+- expanded `.gitignore` coverage for deployment secrets and generated runtime evidence.
+
 ## 3.1.2.1 Release Candidate
 
 - automatically elevates owner preparation when inherited root-owned files require repair;

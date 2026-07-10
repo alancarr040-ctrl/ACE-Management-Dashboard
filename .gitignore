@@ -18,3 +18,25 @@ htmlcov/
 .idea/
 .DS_Store
 Test/
+
+# Runtime and deployment-local state
+.env
+backups/runtime/
+data/cache/*
+!data/cache/.gitkeep
+data/exports/*
+!data/exports/.gitkeep
+data/imports/*
+!data/imports/.gitkeep
+data/knowledge/*
+!data/knowledge/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+data/registry/*
+!data/registry/.gitkeep
+data/screenshots/*
+!data/screenshots/.gitkeep
+data/research_lab/observations.json
+data/research_lab/.acemd-research-store
+data/research_lab/snapshots/*.json
+!data/research_lab/snapshots/.gitkeep

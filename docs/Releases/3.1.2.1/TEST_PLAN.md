@@ -10,7 +10,7 @@ Apply all package paths beneath `/opt/acserver`, then run:
 
 ```bash
 cd /opt/acserver
-./scripts/prepare-dashboard-owner.sh /opt/acserver
+sudo bash ./scripts/prepare-dashboard-owner.sh /opt/acserver
 docker compose up -d --build --force-recreate ace-dashboard
 ```
 
