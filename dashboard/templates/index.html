@@ -386,9 +386,20 @@
         {% if rows %}
         <div class="table-scroll sample-table-scroll">
             <table class="data-table compact-table wide-table sticky-first-column">
-                <thead><tr>{% for key in rows[0].keys() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+                <thead><tr><th>Property</th><th>Raw Identifier</th><th>Status</th><th>Raw Value / Row</th></tr></thead>
                 <tbody>
-                {% for row in rows %}<tr>{% for value in row.values() %}<td>{{ value }}</td>{% endfor %}</tr>{% endfor %}
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            <strong>{{ row._property.friendly_name }}</strong>
+                            <br><span class="muted">{{ row._property.name }}</span>
+                            {% if row._property.description %}<br><span class="muted">{{ row._property.description }}</span>{% endif %}
+                        </td>
+                        <td><code>{{ row._property.group|upper }} {{ row._property.type }}</code></td>
+                        <td><span class="badge {% if row._property.status == 'confirmed' %}green{% elif row._property.status == 'research' %}yellow{% else %}gray{% endif %}">{{ row._property.status|title }}</span></td>
+                        <td>{% for key, value in row.items() %}{% if key != '_property' %}<div class="property-row compact"><div class="property-label">{{ key }}</div><div class="property-value">{{ value }}</div></div>{% endif %}{% endfor %}</td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -538,6 +549,16 @@
         <div class="health-status-pill ok">Read-only</div>
     </div>
 
+    <div class="card">
+        <div class="card-title-line">
+            <div>
+                <h3>Property Dictionary</h3>
+                <p class="muted">Browse the imported AC DOM property definitions separately from ACEMD's local semantic conclusions and observation plans.</p>
+            </div>
+            <a class="button" href="/administration/knowledge/properties#property-dictionary">Open Property Dictionary</a>
+        </div>
+    </div>
+
     <div class="grid-3">
         <div class="card compact-card"><h3>Known Entries</h3><div class="metric-value">{{ knowledge_base.summary.property_entries }}</div><span class="muted">Initial semantic mappings</span></div>
         <div class="card compact-card"><h3>Observation Tests</h3><div class="metric-value">{{ knowledge_base.summary.observation_tests }}</div><span class="muted">Controlled discovery plans</span></div>
@@ -589,6 +610,102 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</section>
+{% endif %}
+
+
+{% if active_tab == 'property_dictionary' %}
+<section id="property-dictionary">
+    <div class="card health-hero ok">
+        <div>
+            <h2>ACE Property Dictionary</h2>
+            <p>Read-only translation layer for ACE property group and type identifiers.</p>
+            <p class="muted">The supplied AC DOM Properties workbook is imported into version-controlled JSON. Confirmed and research entries remain visibly distinct.</p>
+        </div>
+        <div class="health-status-pill ok">Read-only</div>
+    </div>
+
+    <div class="actions">
+        <a class="button secondary" href="/administration/knowledge#knowledge">Back to Knowledge Base</a>
+    </div>
+
+    {% if property_dictionary.summary.load_error %}
+    <div class="card health-hero warning">
+        <div>
+            <h3>Property Dictionary Unavailable</h3>
+            <p>{{ property_dictionary.summary.load_error }}</p>
+            <p class="muted">Expected runtime file: <code>{{ property_dictionary.summary.path }}</code></p>
+        </div>
+        <div class="health-status-pill warning">Action required</div>
+    </div>
+    {% endif %}
+
+    <div class="grid-4">
+        <div class="card compact-card"><h3>Entries</h3><div class="metric-value">{{ property_dictionary.summary.entries }}</div><span class="muted">{{ property_dictionary.summary.groups }} property groups</span></div>
+        <div class="card compact-card"><h3>Confirmed</h3><div class="metric-value green">{{ property_dictionary.summary.confirmed }}</div><span class="muted">Workbook confirmed flag</span></div>
+        <div class="card compact-card"><h3>Research</h3><div class="metric-value yellow">{{ property_dictionary.summary.research }}</div><span class="muted">Needs test or verification</span></div>
+        <div class="card compact-card"><h3>Source</h3><div class="metric-value">{{ property_dictionary.summary.source }}</div><span class="muted">{{ property_dictionary.summary.dictionary_version }}</span></div>
+    </div>
+
+    <div class="card">
+        <h3>Search Dictionary</h3>
+        <form method="get" action="/administration/knowledge/properties#property-dictionary" class="filter-bar">
+            <label>Search<input type="search" name="q" value="{{ property_dictionary.filters.q }}" placeholder="Type, property name, description, lookup, notes"></label>
+            <label>Property Group<select name="group">
+                <option value="all">All groups</option>
+                {% for group in property_dictionary.groups %}<option value="{{ group }}" {% if property_dictionary.filters.group == group %}selected{% endif %}>{{ group|upper }} ({{ property_dictionary.group_counts[group] }})</option>{% endfor %}
+            </select></label>
+            <label>Status<select name="status">
+                <option value="all">All statuses</option>
+                <option value="confirmed" {% if property_dictionary.filters.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                <option value="research" {% if property_dictionary.filters.status == 'research' %}selected{% endif %}>Research</option>
+            </select></label>
+            <label>Per page<select name="per_page">
+                {% for size in [25,50,100,200] %}<option value="{{ size }}" {% if property_dictionary.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+            </select></label>
+            <button class="button" type="submit">Apply</button>
+            <a class="button secondary" href="/administration/knowledge/properties#property-dictionary">Reset</a>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-title-line"><h3>Property Definitions</h3><span class="muted">{{ property_dictionary.total }} matching entries</span></div>
+        {% if property_dictionary.rows %}
+        <div class="table-scroll sample-table-scroll">
+            <table class="data-table compact-table wide-table sticky-first-column">
+                <thead><tr><th>Group / Type</th><th>Official Name</th><th>Friendly Name</th><th>Status</th><th>Description</th><th>Lookup</th><th>Notes</th><th>Origin</th></tr></thead>
+                <tbody>
+                {% for entry in property_dictionary.rows %}
+                    <tr>
+                        <td><code>{{ entry.group|upper }} {{ entry.type }}</code></td>
+                        <td><strong>{{ entry.name }}</strong></td>
+                        <td>{{ entry.friendly_name }}</td>
+                        <td><span class="badge {% if entry.status == 'confirmed' %}green{% else %}yellow{% endif %}">{{ entry.status|title }}</span></td>
+                        <td>{{ entry.description or '—' }}</td>
+                        <td>{{ entry.lookup or '—' }}</td>
+                        <td>{{ entry.notes or '—' }}</td>
+                        <td>{{ entry.origin }}<br><span class="muted">Master List row {{ entry.source_row }}</span></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}<p class="muted">No dictionary entries match the selected filters.</p>{% endif %}
+
+        {% if property_dictionary.pages > 1 %}
+        <div class="actions">
+            {% if property_dictionary.page > 1 %}<a class="button secondary" href="?q={{ property_dictionary.filters.q|urlencode }}&group={{ property_dictionary.filters.group }}&status={{ property_dictionary.filters.status }}&per_page={{ property_dictionary.per_page }}&page={{ property_dictionary.page - 1 }}#property-dictionary">Previous</a>{% endif %}
+            <span>Page {{ property_dictionary.page }} of {{ property_dictionary.pages }}</span>
+            {% if property_dictionary.page < property_dictionary.pages %}<a class="button secondary" href="?q={{ property_dictionary.filters.q|urlencode }}&group={{ property_dictionary.filters.group }}&status={{ property_dictionary.filters.status }}&per_page={{ property_dictionary.per_page }}&page={{ property_dictionary.page + 1 }}#property-dictionary">Next</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Translation Contract</h3>
+        <p><code>(property group, type)</code> is the stable lookup key. For example, <code>INT 198</code> resolves to <strong>Allegiance Swear Timestamp</strong> while its raw stored value remains unchanged and visible.</p>
+        <p class="muted">This dictionary improves display only. It does not authorize writes to ACE databases or decode every stored value enum.</p>
     </div>
 </section>
 {% endif %}

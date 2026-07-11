@@ -1,0 +1,25 @@
+ACE Management Dashboard 3.0.4 Test Package
+
+Changed or added for this package:
+- VERSION
+- CHANGELOG.md
+- dashboard/VERSION
+- dashboard/PHASE
+- dashboard/MILESTONE
+- dashboard/STATUS
+- dashboard/config/project.json
+- dashboard/data/property_dictionary.json
+- dashboard/services/property_dictionary_service.py
+- dashboard/routes/context.py
+- dashboard/routes/administration_routes.py
+- dashboard/routes/workspace_routes.py
+- dashboard/templates/index.html
+- tools/import_property_dictionary.py
+- docs/ACE/ACE_PROPERTY_DICTIONARY.md
+- docs/Packages/PACKAGE_3.0.4.md
+- docs/Releases/3.0.4/README.md
+- docs/Releases/3.0.4/RELEASE_NOTES.md
+- docs/Releases/3.0.4/TEST_PLAN.md
+
+No ACE database migration is included.
+No local configuration file is replaced by this package.

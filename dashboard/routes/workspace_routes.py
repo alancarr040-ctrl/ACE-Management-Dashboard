@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, render_template, request
-from routes.context import common_context, workspace_service
+from routes.context import common_context, workspace_service, property_dictionary_service
 from services.ace_data_service import ACEDataService
 
 workspace_bp = Blueprint('workspace', __name__)
@@ -78,6 +78,8 @@ def administration_characters_page():
 def administration_character_detail_page(character_id: int):
     ctx = _workspace_context('character_detail')
     ctx['character_detail'] = ace_data_service.get_character_detail(character_id)
+    for group, rows in ctx['character_detail'].get('properties', {}).items():
+        ctx['character_detail']['properties'][group] = property_dictionary_service.annotate_rows(group, rows)
     return render_template('index.html', **ctx)
 
 

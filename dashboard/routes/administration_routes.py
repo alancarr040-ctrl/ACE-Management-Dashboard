@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, redirect, render_template, request
 
-from routes.context import common_context, ace_data_service, research_service
+from routes.context import common_context, ace_data_service, research_service, property_dictionary_service
 
 administration_bp = Blueprint("administration", __name__)
 
@@ -54,6 +54,19 @@ def world_page():
 def knowledge_page():
     ctx = _ctx("knowledge")
     ctx["knowledge_base"] = ace_data_service.get_ace_knowledge_base()
+    return render_template("index.html", **ctx)
+
+
+@administration_bp.route("/administration/knowledge/properties")
+def property_dictionary_page():
+    ctx = _ctx("property_dictionary")
+    ctx["property_dictionary"] = property_dictionary_service.browse(
+        search=request.args.get("q", "", type=str),
+        group=request.args.get("group", "all", type=str),
+        status=request.args.get("status", "all", type=str),
+        page=request.args.get("page", 1, type=int),
+        per_page=request.args.get("per_page", 50, type=int),
+    )
     return render_template("index.html", **ctx)
 
 

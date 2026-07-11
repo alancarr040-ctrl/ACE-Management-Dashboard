@@ -9,7 +9,7 @@
 {% if workspace_nav.active_items %}
 <nav class="tabs workspace-tabs">
     {% for item in workspace_nav.active_items %}
-        <a class="tab workspace-tab {% if active_tab == item.key %}active{% endif %} {% if item.status == 'Planned' %}disabled{% endif %}" href="{{ item.href }}">{{ item.label }}{% if item.key == 'notifications' and notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
+        <a class="tab workspace-tab {% if active_tab == item.key or (active_tab == 'property_dictionary' and item.key == 'knowledge') %}active{% endif %} {% if item.status == 'Planned' %}disabled{% endif %}" href="{{ item.href }}">{{ item.label }}{% if item.key == 'notifications' and notification_summary and notification_summary.active %} <span class="nav-count">{{ notification_summary.active }}</span>{% endif %}</a>
     {% endfor %}
 </nav>
 {% endif %}

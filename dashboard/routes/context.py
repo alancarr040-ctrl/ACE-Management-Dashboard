@@ -16,6 +16,7 @@ from services.notification_service import NotificationService
 from services.workspace_service import WorkspaceService
 from services.ace_data_service import ACEDataService
 from services.research_service import ResearchService
+from services.property_dictionary_service import PropertyDictionaryService
 
 docker_service = DockerService()
 backup_service = BackupService()
@@ -31,6 +32,7 @@ notification_service = NotificationService(health_service, metrics_service, auto
 workspace_service = WorkspaceService()
 ace_data_service = ACEDataService()
 research_service = ResearchService(ace_data_service)
+property_dictionary_service = PropertyDictionaryService()
 
 
 def _run_metrics_snapshot():

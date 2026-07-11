@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.4 — ACE Property Dictionary Foundation
+
+- Added a separate searchable Property Dictionary while preserving the existing Knowledge Base.
+- Imported 899 community property definitions with confirmed/research provenance.
+- Added shared property lookup and character-detail annotation.
+- Installed the generated dictionary in the persistent runtime data path used by Docker.
+- Added configurable runtime path resolution and visible load-error diagnostics.
+- Finalized release metadata and deployment documentation.
+
 ## 3.1.2.1 — Research Lab Persistence Correction
 
 - Moved Research Lab evidence to persistent host-mounted storage.

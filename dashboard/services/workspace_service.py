@@ -93,7 +93,7 @@ class WorkspaceService:
         for workspace in WORKSPACES
         for item in workspace.items
     }
-    MODULE_TO_WORKSPACE.update({"account_detail": "administration", "character_detail": "administration", "character_relationships": "administration", "knowledge": "administration", "research": "administration", "observation_detail": "administration"})
+    MODULE_TO_WORKSPACE.update({"account_detail": "administration", "character_detail": "administration", "character_relationships": "administration", "knowledge": "administration", "property_dictionary": "administration", "research": "administration", "observation_detail": "administration"})
 
     def get_navigation(self, active_tab: str) -> dict:
         active_workspace = self.get_workspace_for_tab(active_tab)
